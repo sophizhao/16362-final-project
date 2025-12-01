@@ -1,0 +1,32 @@
+# Training Configuration for PathPlanningMaskEnv
+
+# Random seed
+seed: 42
+
+# Environment settings
+map_size: [10, 10]           # Grid dimensions (height, width)
+obstacle_density: 0.2        # Fraction of cells that are obstacles (0.0 to 1.0)
+max_steps: 200               # Maximum steps per episode
+hist_len: 6                  # Length of action history
+n_envs: 4                    # Number of parallel environments
+
+# Training settings
+total_timesteps: 500_000     # Total training timesteps
+checkpoint_freq: 25_000      # Save checkpoint every N steps
+log_interval: 10              # Print stats every N episodes (default is 100)
+
+# DQN Hyperparameters
+policy: "MlpPolicy"
+learning_rate: 0.0001        # Learning rate (1e-4)
+gamma: 0.99                  # Discount factor
+buffer_size: 50_000          # Replay buffer size
+batch_size: 128              # Batch size for training
+train_freq: 4                # Update the model every N steps
+target_update_interval: 1000 # Update target network every N steps
+exploration_fraction: 0.3    # Fraction of training for exploration
+exploration_final_eps: 0.05  # Final exploration epsilon
+learning_starts: 1000        # Start training after N steps
+
+# Policy network architecture (optional)
+policy_kwargs:
+  net_arch: [256, 256]       # Hidden layer sizes

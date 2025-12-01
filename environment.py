@@ -1,531 +1,426 @@
-# planning_env.py
-
-import numpy as np
+# path_planning_mask_env.py
 import gymnasium as gym
+import numpy as np
 from gymnasium import spaces
 from collections import deque
-from typing import Optional, Dict, Tuple
-import matplotlib
-from matplotlib.patches import Circle
-matplotlib.use("Agg")
-
-from domains_cc.map_and_scen_utils import parse_map_file, parse_scen_file
-from domains_cc.benchmark.parallel_benchmark_base import get_map_file_path
-from domains_cc.footprints.footprint import load_footprint_from_yaml_path
-from domains_cc.dynamics.robot_dynamics import load_dynamics_from_yaml_path
-from domains_cc.worldCC import WorldCollisionChecker
-from domains_cc.worldCCVisualizer import addGridToPlot, addXYThetaToPlot
-from domains_cc.worldCC_CBS import WorldConstraint
 
 
+# Much of this code is adapted from my summer research with SBPL 
 class PathPlanningMaskEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
+    """
+    Simplified gridworld for DQN path planning:
+      - 10x10 grid with random obstacles
+      - Simple 5-action movement (stay, up, down, left, right)
+      - LiDAR scans
+      - Distance-based potential field
+      - Action history
+      - Distance gradient field
+    """
 
-    def __init__(
-        self,
-        scen_file: str,
-        problem_index: int,
-        dynamics_config: str,
-        footprint_config: str,
-        max_steps: int = 1000,
-        angle_tol: float = 0.10,
-        n_lasers: int = 16,
-        max_scan_dist: float = 10.0,
-        hist_len: int = 6,
-    ):
+    metadata = {"render_modes": ["human"]}
+
+    def __init__(self, map_size=(10, 10), obstacles=None, max_steps=200, hist_len=6):
         super().__init__()
 
-        # --- dynamics & footprint ---
-        self.dynamics, _ = load_dynamics_from_yaml_path(dynamics_config)
-        self.footprint, _, _ = load_footprint_from_yaml_path(footprint_config)
+        self.H, self.W = map_size
+        self.max_steps = max_steps
+        self.hist_len = hist_len
+        self.step_count = 0
 
-        # --- load raw map (top-origin) ---
-        map_path = get_map_file_path(scen_file)
-        raw_grid, resolution = parse_map_file(map_path)
-        self.resolution = resolution
-        self.max_scan_dist = max_scan_dist
+        # -------------------------
+        # Map / obstacles
+        # -------------------------
+        self.map = np.zeros((self.H, self.W), dtype=np.uint8)
+        if obstacles is not None:
+            for (y, x) in obstacles:
+                if 0 <= y < self.H and 0 <= x < self.W:
+                    self.map[y, x] = 1
 
-        self.world_cc = WorldCollisionChecker(raw_grid, resolution)
-        # raw grid is accessed x, y
-        # i want to access bottom_grid as row, col
-        bottom_grid = np.transpose(raw_grid)
-        # print("bottom_grid shape: ", bottom_grid.shape)
-        free_mask   = (~bottom_grid).astype(np.uint8)
+        # Action space: 0=stay, 1=up, 2=down, 3=left, 4=right
+        self.num_actions = 5
+        self.action_space = spaces.Discrete(self.num_actions)
 
+        self.lidar_beams = 16
+        self.max_scan_dist = 20.0
 
-        # --- start / goal (world coords, origin bottom-left) ---
-        pairs = parse_scen_file(scen_file)
-        self.start_xytheta, self.goal_xytheta = pairs[problem_index]
-        self.start_state = self.dynamics.get_state_from_xytheta(self.start_xytheta)
-        self.goal_state  = self.dynamics.get_state_from_xytheta(self.goal_xytheta)
+        self.observation_space = spaces.Dict(
+            {
+                "scan": spaces.Box(0.0, self.max_scan_dist, (self.lidar_beams,), dtype=np.float32),
+                "goal_vec": spaces.Box(-np.inf, np.inf, (2,), dtype=np.float32),
+                "dist_grad": spaces.Box(-1.0, 1.0, (2,), dtype=np.float32),
+                "dist_phi": spaces.Box(0.0, 1.0, (1,), dtype=np.float32),
+                "hist": spaces.MultiDiscrete([self.num_actions] * hist_len),
+            }
+        )
 
-        # --- goal in grid indices (bottom-origin) ---
-        row = int(np.floor(self.goal_xytheta[1] / resolution))   
-        col = int(np.floor(self.goal_xytheta[0] / resolution))   
+        self.agent_pos = np.array([0, 0], dtype=np.int32)
+        self.goal = np.array([self.H - 1, self.W - 1], dtype=np.int32)
+        self.action_history = deque(maxlen=hist_len)
 
-        # --- distance map on bottom-origin grid ---
-        dist_arr = self._compute_distance_map(free_mask, np.array([row, col]), resolution)
-        unreachable = np.isinf(dist_arr)
-        reachable   = ~unreachable
-        self.max_potential = float(np.max(dist_arr[reachable])) if np.any(reachable) else 0.0
-        dist_arr[unreachable] = self.max_potential
-        self.dist_map = dist_arr  
+        self.time_cost = -0.1
+        self.completion_bonus = 10.0
+        self.collision_penalty = -10.0
 
-        # --- gradient field (unit vectors) ---
-        gy_e, gx_e = np.gradient(self.dist_map, resolution, edge_order=2)
-        mag = np.hypot(gx_e, gy_e)
-        self.grad_x = np.zeros_like(gx_e, dtype=np.float32)
-        self.grad_y = np.zeros_like(gy_e, dtype=np.float32)
+        # -------------------------
+        # Distance field and gradient (computed on reset)
+        # -------------------------
+        self.dist_map = None
+        self.grad_x = None
+        self.grad_y = None
+        self.max_potential = 0.0
+
+    # ============================================================
+    # -------------------  Helper Methods ------------------------
+    # ============================================================
+
+    def _compute_distance_map(self, goal_pos):
+        """
+        BFS to compute distance from every free cell to goal.
+        Returns distance map in grid coordinates.
+        """
+        from collections import deque as bfs_deque
+
+        dist = np.full((self.H, self.W), np.inf, dtype=np.float32)
+        free = (self.map == 0)
+
+        gy, gx = goal_pos
+        if not free[gy, gx]:
+            # If goal is on obstacle, find nearest free cell
+            visited = np.zeros_like(free, dtype=bool)
+            q = bfs_deque([(gy, gx)])
+            visited[gy, gx] = True
+            neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            while q:
+                y0, x0 = q.popleft()
+                for dy, dx in neighbors:
+                    yn, xn = y0 + dy, x0 + dx
+                    if 0 <= yn < self.H and 0 <= xn < self.W and not visited[yn, xn]:
+                        if free[yn, xn]:
+                            gy, gx = yn, xn
+                            q.clear()
+                            break
+                        visited[yn, xn] = True
+                        q.append((yn, xn))
+
+        # BFS from goal
+        dist[gy, gx] = 0.0
+        q = bfs_deque([(gy, gx)])
+        neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        while q:
+            y0, x0 = q.popleft()
+            for dy, dx in neighbors:
+                yn, xn = y0 + dy, x0 + dx
+                if (
+                    0 <= yn < self.H
+                    and 0 <= xn < self.W
+                    and free[yn, xn]
+                    and not np.isfinite(dist[yn, xn])
+                ):
+                    dist[yn, xn] = dist[y0, x0] + 1.0
+                    q.append((yn, xn))
+
+        return dist
+
+    def _compute_gradient_field(self):
+        """
+        Compute normalized gradient of distance field.
+        Points toward decreasing distance (toward goal).
+        """
+        gy, gx = np.gradient(self.dist_map)
+        mag = np.hypot(gx, gy)
+
+        self.grad_x = np.zeros_like(gx, dtype=np.float32)
+        self.grad_y = np.zeros_like(gy, dtype=np.float32)
+
         nz = mag > 1e-8
-        self.grad_x[nz] = -gx_e[nz] / mag[nz]
-        self.grad_y[nz] = -gy_e[nz] / mag[nz]
-        valid = (free_mask == 1) & (~unreachable)
+        self.grad_x[nz] = -gx[nz] / mag[nz]
+        self.grad_y[nz] = -gy[nz] / mag[nz]
+
+        # Zero out gradients on obstacles and unreachable cells
+        valid = (self.map == 0) & np.isfinite(self.dist_map)
         self.grad_x[~valid] = 0.0
         self.grad_y[~valid] = 0.0
 
-        # --- reward weights ---
-        self.align_coeff       =  1.0
-        self.time_cost         = -0.2
-        self.completion_bonus  = 80.0
-        self.collision_penalty = -10.0
+    def _compute_lidar(self):
+        """
+        Cast rays uniformly in [0, 2π) from agent position.
+        Returns normalized distances to nearest obstacle or boundary.
+        """
+        angles = np.linspace(0, 2 * np.pi, self.lidar_beams, endpoint=False)
+        readings = []
 
-        # --- action & observation spaces ---
-        self.n_actions      = self.dynamics.motion_primitives.shape[0]
-        self.action_space   = spaces.Discrete(self.n_actions)
-        self.hist_len       = hist_len
-        self.action_history = deque(maxlen=hist_len)
+        for theta in angles:
+            dist = self.max_scan_dist
+            for r in range(1, int(self.max_scan_dist) + 1):
+                y = int(self.agent_pos[0] + r * np.sin(theta))
+                x = int(self.agent_pos[1] + r * np.cos(theta))
 
-        # --- lidar ---
-        self.n_lasers     = n_lasers
-        self.laser_angles = np.linspace(-np.pi, np.pi, n_lasers, endpoint=False)
+                if not (0 <= y < self.H and 0 <= x < self.W):
+                    dist = r
+                    break
+                if self.map[y, x] == 1:
+                    dist = r
+                    break
 
-        self.observation_space = spaces.Dict({
-            "scan":       spaces.Box(0.0, max_scan_dist, (n_lasers,), dtype=np.float32),
-            "goal_vec":   spaces.Box(-np.inf, np.inf, (2,),       dtype=np.float32),
-            "action_mask":spaces.MultiBinary(self.n_actions),
-            "hist":       spaces.MultiDiscrete([self.n_actions]*hist_len),
-            "dist_grad":  spaces.Box(-1.0, 1.0, (2,), dtype=np.float32),
-            "dist_phi":   spaces.Box(0.0, 1.0,   (1,), dtype=np.float32),
-        })
+            readings.append(dist / self.max_scan_dist)
 
-        # --- internal state ---
-        self.max_steps = int(max_steps)
-        self.angle_tol = float(angle_tol)
-        self.state: Optional[np.ndarray] = None
-        self._steps = 0
-        self._fig = None
-        self._ax  = None
+        return np.array(readings, dtype=np.float32)
 
-        # constraints stored only for masking / debugging
-        self.constraints: list[WorldConstraint] = []
+    def _get_distance_value(self, pos):
+        """Get interpolated distance value at position."""
+        y, x = pos
+        y = np.clip(y, 0, self.H - 1)
+        x = np.clip(x, 0, self.W - 1)
+        return float(self.dist_map[int(y), int(x)])
 
-        # --- precise time accumulator for "act" timeline ---
-        self._t_acc: float = 0.0
+    def _get_gradient_at_pos(self, pos):
+        """Get gradient vector at position."""
+        y, x = pos
+        y = int(np.clip(y, 0, self.H - 1))
+        x = int(np.clip(x, 0, self.W - 1))
+        return np.array([self.grad_x[y, x], self.grad_y[y, x]], dtype=np.float32)
 
-        # debugging
-        self.debug_constraints = True
-        self._violations_logged = 0
-        self.log_every = 1
-        self.log_min_clear = None
+    def _get_free_cells(self):
+        """Get all free (non-obstacle) cells."""
+        return np.argwhere(self.map == 0)
 
-        self.constraint_radius = 0.10   
-        self.constraint_time_slack = 10.00 
+    # ============================================================
+    # ---------------------- Gym Methods -------------------------
+    # ============================================================
 
-    # ----------------------------------------------------------------------
-
-    def reset(self, *, seed=None, options=None) -> Tuple[Dict, Dict]:
+    def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.state = self.start_state.copy()
-        self._steps = 0
-        self._t_acc = 0.0
+
+        self.step_count = 0
         self.action_history.clear()
         for _ in range(self.hist_len):
             self.action_history.append(0)
-        return self._get_obs(), {}
 
-    def step(self, action: int):
-        assert self.state is not None
-        cur = self.state.copy()
+        # Get all free cells
+        free_cells = self._get_free_cells()
 
-        traj = self.dynamics.get_next_states(cur)[action, :, :3]
-        valid = self.world_cc.isValid(self.footprint, traj).all()
+        if len(free_cells) < 2:
+            # Fallback if not enough free cells
+            self.agent_pos = np.array([0, 0], dtype=np.int32)
+            self.goal = np.array([self.H - 1, self.W - 1], dtype=np.int32)
+        else:
+            # Randomly select start and goal from free cells
+            indices = self.np_random.choice(len(free_cells), size=2, replace=False)
+            self.agent_pos = free_cells[indices[0]].copy()
+            self.goal = free_cells[indices[1]].copy()
 
-        # per-step constraint logging (does not affect dynamics)
-        self._log_constraint_check(cur, traj, action)
+        # Compute distance field and gradient from goal
+        self.dist_map = self._compute_distance_map(self.goal)
+        reachable = np.isfinite(self.dist_map)
+        self.max_potential = float(np.max(self.dist_map[reachable])) if np.any(reachable) else 1.0
+        self.dist_map[~reachable] = self.max_potential
+
+        self._compute_gradient_field()
+
+        obs = self._compute_obs()
+        return obs, {}
+
+    def _compute_obs(self):
+        """Compute observation dictionary."""
+        # LiDAR scan
+        scan = self._compute_lidar()
+
+        # Goal vector (relative position to goal)
+        goal_vec = (self.goal - self.agent_pos).astype(np.float32)
+
+        # Distance gradient at agent position
+        dist_grad = self._get_gradient_at_pos(self.agent_pos)
+
+        # Normalized distance to goal
+        dist_val = self._get_distance_value(self.agent_pos)
+        dist_phi = np.array([dist_val / (self.max_potential + 1e-6)], dtype=np.float32)
+
+        # Action history
+        hist = np.array(self.action_history, dtype=np.int64)
+
+        return {
+            "scan": scan,
+            "goal_vec": goal_vec,
+            "dist_grad": dist_grad,
+            "dist_phi": dist_phi,
+            "hist": hist,
+        }
+
+    def step(self, action):
+        self.step_count += 1
+
+        # Store old distance for reward shaping
+        old_dist = self._get_distance_value(self.agent_pos)
+
+        # Define movements
+        moves = {
+            0: (0, 0),    # stay
+            1: (-1, 0),   # up
+            2: (1, 0),    # down
+            3: (0, -1),   # left
+            4: (0, 1),    # right
+        }
+
+        dy, dx = moves[action]
+        new_y = self.agent_pos[0] + dy
+        new_x = self.agent_pos[1] + dx
+
+        # Check if move is valid
+        valid = (
+            0 <= new_y < self.H
+            and 0 <= new_x < self.W
+            and self.map[new_y, new_x] == 0
+        )
 
         if not valid:
+            # Invalid action - collision or out of bounds
             reward = self.collision_penalty + self.time_cost
             self.action_history.append(action)
         else:
-            self.state = traj[-1]
+            # Valid action - move agent
+            self.agent_pos[:] = (new_y, new_x)
             self.action_history.append(action)
 
-            prev_phi = self._interpolate_dist(cur[:2])
-            new_phi  = self._interpolate_dist(self.state[:2])
-            reward = (prev_phi - new_phi) + self.time_cost
+            # Calculate new distance
+            new_dist = self._get_distance_value(self.agent_pos)
 
-        # advance precise act timeline AFTER logging
-        dt_action = float(self.dynamics.motion_primitives[action, -1])
-        self._t_acc += dt_action
+            # Reward with distance-based shaping
+            reward = self.time_cost + (old_dist - new_dist)
 
-        # advance step counter
-        self._steps += 1
-
-        dxg = self.state[0] - self.goal_state[0]
-        dyg = self.state[1] - self.goal_state[1]
-        dtg = self.state[2] - self.goal_state[2]
-        reached = valid and (np.hypot(dxg, dyg) < 0.2)
+        # Check if goal reached
+        reached = np.array_equal(self.agent_pos, self.goal)
         if reached:
             reward += self.completion_bonus
 
-        done = reached or (self._steps >= self.max_steps)
-        info = {"collision": not valid, "reached": reached}
-        return self._get_obs(), reward, done, False, info
+        # Check termination conditions
+        terminated = reached
+        truncated = self.step_count >= self.max_steps
 
-    def set_constraints(self, constraints: list[WorldConstraint]):
-        self.constraints = sorted(constraints, key=lambda c: c.get_end_constraint_time())
+        info = {"reached": reached, "collision": not valid}
 
-    @staticmethod
-    def _seg_point_dist(p0, p1, q):
-        v = p1 - p0; w = q - p0
-        vv = float(np.dot(v, v))
-        if vv < 1e-12:
-            return float(np.linalg.norm(w))
-        t = np.clip(float(np.dot(w, v) / vv), 0.0, 1.0)
-        proj = p0 + t * v
-        return float(np.linalg.norm(q - proj))
+        return self._compute_obs(), reward, terminated, truncated, info
 
-
-    def action_masks(self) -> np.ndarray:
-        assert self.state is not None
-
-        trajs = self.dynamics.get_next_states(self.state)[:, :, :3]
-        mask = np.zeros(self.n_actions, dtype=bool)
-
-        dt_default = float(self.dynamics.motion_primitives[0, -1])
-        t0_mask = self._steps * dt_default
-
-        map_ok    = np.zeros(self.n_actions, dtype=bool)
-        st_ok     = np.zeros(self.n_actions, dtype=bool)
-        clearance = np.full(self.n_actions, 1e9, dtype=np.float32)
-
-        constr_pts, constr_ts = [], []
-        for c in self.constraints:
-            constr_pts.append(np.array(c.get_point(), dtype=np.float32))
-            constr_ts.append(float(c.get_start_constraint_time()))
-        constr_pts = np.asarray(constr_pts, dtype=np.float32) if len(constr_pts) > 0 else None
-        constr_ts  = np.asarray(constr_ts,  dtype=np.float32) if len(constr_ts)  > 0 else None
-
-        R   = float(self.constraint_radius)
-        TSL = float(self.constraint_time_slack)
-        EPS = 1e-3 
-
-        banned_by_radius = 0
-        banned_by_core   = 0
-
-        for i in range(self.n_actions):
-            poly3 = trajs[i]
-            if not self.world_cc.isValid(self.footprint, poly3).all():
-                continue
-            map_ok[i] = True
-
-            dt_i = float(self.dynamics.motion_primitives[i, -1])
-
-            poses_mask = np.stack([self.state[:3], poly3[-1]], axis=0)
-            times_mask = np.array([t0_mask, t0_mask + dt_i], dtype=float)
-            violates_core = any(
-                c.violated_constraint(poses_mask, times_mask, self.footprint, self.world_cc)
-                for c in self.constraints
-            )
-
-            violates_rad = False
-            min_d = float("inf")
-            if constr_pts is not None:
-                t0 = t0_mask - TSL
-                t1 = t0_mask + dt_i + TSL
-                idx = np.where((constr_ts >= t0) & (constr_ts <= t1))[0]
-                if idx.size > 0:
-                    poly2 = poly3[:, :2].astype(np.float32)
-                    for j in idx:
-                        q = constr_pts[j]
-                        for k in range(len(poly2) - 1):
-                            d = self._seg_point_dist(poly2[k], poly2[k+1], q)
-                            if d < min_d:
-                                min_d = d
-                            if d < (R + EPS):
-                                violates_rad = True
-                    clearance[i] = min_d if np.isfinite(min_d) else clearance[i]
-
-            violates = (violates_core or violates_rad)
-            if violates:
-                banned_by_radius += int(violates_rad)
-                banned_by_core   += int(violates_core)
-            else:
-                st_ok[i] = True
-
-        final_ok = map_ok & st_ok
-
-        if not final_ok.any():
-            cand = np.where(map_ok)[0]
-            if cand.size > 0:
-                top = cand[np.argsort(-clearance[cand])[:2]]
-                final_ok[top] = True
-
-        mask[:] = final_ok
-
-        # if self.debug_constraints:
-        #     print(
-        #         f"[mask] step={self._steps} "
-        #         f"map_ok={int(map_ok.sum())}/{self.n_actions} "
-        #         f"final_ok={int(final_ok.sum())}/{self.n_actions} "
-        #         f"banned_by_radius={banned_by_radius} banned_by_core={banned_by_core} "
-        #         f"R={R:.3f} TSL={TSL:.3f}"
-        #     )
-
-        return mask
-
-    # ----------------------------------------------------------------------
-
-    def _get_obs(self) -> Dict:
-        x, y, theta = self.state[:3]
-
-        # lidar (map only)
-        scans = np.full(self.n_lasers, self.max_scan_dist, dtype=np.float32)
-        H, W = self.dist_map.shape
-        max_steps = int(self.max_scan_dist / self.resolution)
-        for idx, ang in enumerate(self.laser_angles):
-            dx = np.cos(theta+ang); dy = np.sin(theta+ang)
-            for s in range(max_steps):
-                px = x + dx*s*self.resolution
-                py = y + dy*s*self.resolution
-                ix = int(np.floor(px/self.resolution))
-                iy = int(np.floor(py/self.resolution))
-                # print("grid shape: ", self.world_cc.grid.shape)
-                # print("H, W: ", H, W)
-                # print("ix, iy: ", ix, iy)
-                if not (0 <= ix < W and 0 <= iy < H) or self.world_cc.grid[ix, iy] != 0:
-                    scans[idx] = s * self.resolution
-                    break
-
-        # goal vector in robot frame
-        dxg = self.goal_state[0]-x; dyg = self.goal_state[1]-y
-        gx =  dxg*np.cos(-theta) - dyg*np.sin(-theta)
-        gy =  dxg*np.sin(-theta) + dyg*np.cos(-theta)
-        goal_vec = np.array([gx, gy], dtype=np.float32)
-
-        # dist-gradient in robot frame
-        gx_w = self._interpolate_grad(self.grad_x, self.state[:2])
-        gy_w = self._interpolate_grad(self.grad_y, self.state[:2])
-        gx_r = gx_w*np.cos(-theta) - gy_w*np.sin(-theta)
-        gy_r = gx_w*np.sin(-theta) + gy_w*np.cos(-theta)
-
-        # normalized distance
-        phi = self._interpolate_dist(self.state[:2])
-        phi_norm = phi / (self.max_potential + 1e-6)
-
-        hist = np.array(self.action_history, dtype=np.int64)
-        return {
-            "scan":        scans,
-            "goal_vec":    goal_vec,
-            "action_mask": self.action_masks(),
-            "hist":        hist,
-            "dist_grad":   np.array([gx_r, gy_r], dtype=np.float32),
-            "dist_phi":    np.array([phi_norm], dtype=np.float32),
-        }
-
-    # ----------------------------------------------------------------------
-
-    def render(self, mode="human"):
+    def render(self, mode='human'):
+        """Matplotlib-based rendering."""
         import matplotlib.pyplot as plt
-
-        if self._fig is None:
-            self._fig, self._ax = plt.subplots(figsize=(6,6))
+        from matplotlib.patches import Rectangle, Circle
+        
+        if not hasattr(self, '_fig') or self._fig is None:
+            self._fig, self._ax = plt.subplots(figsize=(8, 8))
+            plt.ion()  # Interactive mode
+        
         ax = self._ax
         ax.clear()
-
-        # draw grid, start, robot
-        addGridToPlot(self.world_cc, ax)
-        addXYThetaToPlot(self.world_cc, ax, self.footprint, self.start_xytheta)
-        addXYThetaToPlot(self.world_cc, ax, self.footprint, self.state[:3])
-
-        # visualize constraints only
-        for c in self.constraints:
-            x, y = c.get_point()
-            ax.scatter(x, y, marker='x', s=100, c='yellow', linewidths=2, zorder=6)
-            circ = Circle((x, y), radius=self.constraint_radius, fill=False,
-                        edgecolor='red', linewidth=1.0, alpha=0.9, zorder=6)
-            ax.add_patch(circ)
-
-        # heatmap
-        H, W = self.dist_map.shape
-        dm = self.dist_map / (self.max_potential + 1e-6)
-        ax.imshow(
-            dm,
-            origin='lower',
-            extent=[0, W*self.resolution, 0, H*self.resolution],
-            cmap='viridis',
-            alpha=0.5
+        
+        # Draw grid
+        for y in range(self.H + 1):
+            ax.plot([0, self.W], [y, y], 'k-', linewidth=0.5, alpha=0.3)
+        for x in range(self.W + 1):
+            ax.plot([x, x], [0, self.H], 'k-', linewidth=0.5, alpha=0.3)
+        
+        # Draw obstacles
+        for y in range(self.H):
+            for x in range(self.W):
+                if self.map[y, x] == 1:
+                    rect = Rectangle((x, y), 1, 1, facecolor='black', edgecolor='gray')
+                    ax.add_patch(rect)
+        
+        # Draw distance field as heatmap
+        if self.dist_map is not None:
+            normalized_dist = self.dist_map / (self.max_potential + 1e-6)
+            ax.imshow(
+                normalized_dist,
+                origin='lower',
+                extent=[0, self.W, 0, self.H],
+                cmap='viridis',
+                alpha=0.3,
+                interpolation='bilinear'
+            )
+        
+        if self.grad_x is not None and self.grad_y is not None:
+            step = 2
+            for y in range(0, self.H, step):
+                for x in range(0, self.W, step):
+                    if self.map[y, x] == 0 and np.isfinite(self.dist_map[y, x]):
+                        gx = self.grad_x[y, x]
+                        gy = self.grad_y[y, x]
+                        mag = np.hypot(gx, gy)
+                        if mag > 0.1:
+                            ax.arrow(
+                                x + 0.5, y + 0.5,
+                                gx * 0.4, gy * 0.4,
+                                head_width=0.15,
+                                head_length=0.1,
+                                fc='orange',
+                                ec='orange',
+                                alpha=0.6,
+                                linewidth=1
+                            )
+        
+        # Draw goal
+        goal_circle = Circle(
+            (self.goal[1] + 0.5, self.goal[0] + 0.5),
+            0.4,
+            facecolor='green',
+            edgecolor='darkgreen',
+            linewidth=2,
+            alpha=0.8,
+            zorder=5
         )
-        ax.set_xlim(0, W*self.resolution)
-        ax.set_ylim(0, H*self.resolution)
+        ax.add_patch(goal_circle)
+        ax.text(
+            self.goal[1] + 0.5, self.goal[0] + 0.5,
+            'G',
+            ha='center', va='center',
+            color='white',
+            fontsize=14,
+            fontweight='bold',
+            zorder=6
+        )
+        
+        # Draw agent
+        agent_circle = Circle(
+            (self.agent_pos[1] + 0.5, self.agent_pos[0] + 0.5),
+            0.35,
+            facecolor='blue',
+            edgecolor='darkblue',
+            linewidth=2,
+            alpha=0.9,
+            zorder=5
+        )
+        ax.add_patch(agent_circle)
+        ax.text(
+            self.agent_pos[1] + 0.5, self.agent_pos[0] + 0.5,
+            'A',
+            ha='center', va='center',
+            color='white',
+            fontsize=12,
+            fontweight='bold',
+            zorder=6
+        )
+        
+        # Set limits and labels
+        ax.set_xlim(0, self.W)
+        ax.set_ylim(0, self.H)
         ax.set_aspect('equal')
-        ax.set_title(f"Step {self._steps}")
-
-        if mode == "rgb_array":
-            self._fig.canvas.draw()
-            w, h = self._fig.canvas.get_width_height()
-            buf = np.frombuffer(self._fig.canvas.tostring_rgb(), dtype=np.uint8)
-            return buf.reshape(h, w, 3)
-        else:
-            plt.pause(1/self.metadata["render_fps"])
-
-    # ----------------------------------------------------------------------
-
-    @staticmethod
-    def _compute_distance_map(grid: np.ndarray, goal_xy: np.ndarray, resolution: float) -> np.ndarray:
-        from collections import deque
-        H, W = grid.shape
-        free = (grid == 1)
-        dist = np.full((H, W), np.inf, dtype=np.float32)
-
-        gx, gy = goal_xy.astype(int)
-        # if goal on obstacle, find nearest free
-        if not free[gx, gy]:
-            visited = np.zeros_like(free, bool)
-            dq = deque([(gx, gy)])
-            visited[gx, gy] = True
-            neighs = [(-1,0),(1,0),(0,-1),(0,1)]
-            while dq:
-                x0, y0 = dq.popleft()
-                for dx, dy in neighs:
-                    xn, yn = x0+dx, y0+dy
-                    if 0<=xn<H and 0<=yn<W and not visited[xn,yn]:
-                        if free[xn,yn]:
-                            gx, gy = xn, yn
-                            dq.clear()
-                            break
-                        visited[xn,yn] = True
-                        dq.append((xn,yn))
-
-        dist[gx, gy] = 0.0
-        dq = deque([(gx, gy)])
-        neighs = [(-1,0),(1,0),(0,-1),(0,1)]
-        while dq:
-            x0, y0 = dq.popleft()
-            for dx, dy in neighs:
-                xn, yn = x0+dx, y0+dy
-                if (0<=xn<H and 0<=yn<W and free[xn,yn]
-                        and not np.isfinite(dist[xn,yn])):
-                    dist[xn,yn] = dist[x0,y0] + 1.0
-                    dq.append((xn,yn))
-        return dist
-
-    def _interpolate_dist(self, xy: np.ndarray) -> float:
-        x, y = xy
-        i_f = np.clip(y/self.resolution, 0, self.dist_map.shape[0]-1)
-        j_f = np.clip(x/self.resolution, 0, self.dist_map.shape[1]-1)
-        i0, j0 = int(np.floor(i_f)), int(np.floor(j_f))
-        i1, j1 = min(i0+1, self.dist_map.shape[0]-1), min(j0+1, self.dist_map.shape[1]-1)
-        di, dj = i_f - i0, j_f - j0
-        d00 = self.dist_map[i0, j0]; d10 = self.dist_map[i1, j0]
-        d01 = self.dist_map[i0, j1]; d11 = self.dist_map[i1, j1]
-        return (
-            d00*(1-di)*(1-dj)
-          + d10*di*(1-dj)
-          + d01*(1-di)*dj
-          + d11*di*dj
+        ax.set_xlabel('X', fontsize=10)
+        ax.set_ylabel('Y', fontsize=10)
+        
+        # Title with info
+        dist_to_goal = np.linalg.norm(self.agent_pos - self.goal)
+        ax.set_title(
+            f'Step: {self.step_count}/{self.max_steps} | '
+            f'Agent: {tuple(self.agent_pos)} | Goal: {tuple(self.goal)} | '
+            f'Distance: {dist_to_goal:.2f}',
+            fontsize=11,
+            pad=10
         )
-
-    def _interpolate_grad(self, grad_map: np.ndarray, xy: np.ndarray) -> float:
-        x, y = xy
-        i_f = np.clip(y/self.resolution, 0, self.dist_map.shape[0]-1)
-        j_f = np.clip(x/self.resolution, 0, self.dist_map.shape[1]-1)
-        i0, j0 = int(np.floor(i_f)), int(np.floor(j_f))
-        i1, j1 = min(i0+1, grad_map.shape[0]-1), min(j0+1, grad_map.shape[1]-1)
-        di, dj = i_f - i0, j_f - j0
-        g00 = grad_map[i0, j0]; g10 = grad_map[i1, j0]
-        g01 = grad_map[i0, j1]; g11 = grad_map[i1, j1]
-        return (
-            g00*(1-di)*(1-dj)
-          + g10*di*(1-dj)
-          + g01*(1-di)*dj
-          + g11*di*dj
-        )
-
-    def _log_constraint_check(self, cur_state, traj, action_idx):
-        """
-        Logging only: check this executed action against constraints
-        on BOTH timelines:
-        - mask timeline:  t0_mask = _steps * dt_default
-        - act timeline:   t0_act  = self._t_acc (accumulated real time)
-        Prints every `self.log_every` steps, or whenever min_clear <= self.log_min_clear,
-        and always prints on hits.
-        """
-        if not self.debug_constraints or len(self.constraints) == 0:
-            return
-
-        dt_default = float(self.dynamics.motion_primitives[0, -1])
-        dt_action  = float(self.dynamics.motion_primitives[action_idx, -1])
-
-        # timelines
-        t0_mask = self._steps * dt_default
-        t1_mask = t0_mask + dt_action
-
-        t0_act  = self._t_acc
-        t1_act  = t0_act + dt_action
-
-        poses = np.stack([cur_state[:3], traj[-1]], axis=0)
-        times_mask = np.array([t0_mask, t1_mask], dtype=float)
-        times_act  = np.array([t0_act,  t1_act ], dtype=float)
-
-        v_mask = any(
-            c.violated_constraint(poses, times_mask, self.footprint, self.world_cc)
-            for c in self.constraints
-        )
-        v_act  = any(
-            c.violated_constraint(poses, times_act,  self.footprint, self.world_cc)
-            for c in self.constraints
-        )
-
-        # spatial nearest distance (visual aid)
-        def seg_point_dist(p0, p1, q):
-            v = p1 - p0; w = q - p0
-            vv = float(np.dot(v, v))
-            if vv < 1e-12:
-                return float(np.linalg.norm(w))
-            t = np.clip(float(np.dot(w, v) / vv), 0.0, 1.0)
-            proj = p0 + t * v
-            return float(np.linalg.norm(q - proj))
-
-        min_clear = float("inf"); near_xy = (np.nan, np.nan)
-        p0 = cur_state[:2].astype(np.float32)
-        p1 = traj[-1, :2].astype(np.float32)
-        for c in self.constraints:
-            q = np.array(c.get_point(), dtype=np.float32)
-            d = seg_point_dist(p0, p1, q)
-            if d < min_clear:
-                min_clear = d
-                near_xy = (float(q[0]), float(q[1]))
-
-        # Always print on hits
-        if v_mask or v_act:
-            self._violations_logged += 1
-            # print(
-            #     f"[CONSTR-HIT] step={self._steps} act={action_idx}  "
-            #     f"mask=[{t0_mask:.3f},{t1_mask:.3f}] -> {v_mask}  "
-            #     f"act=[{t0_act:.3f},{t1_act:.3f}]   -> {v_act}  "
-            #     f"min_clear={min_clear:.3f}  near=({near_xy[0]:.3f},{near_xy[1]:.3f})"
-            # )
-            return
-
-        # Otherwise: print every step (log_every=1), or when clearance under threshold
-        need_print = (self._steps % max(1, int(self.log_every)) == 0)
-        if (self.log_min_clear is not None) and (min_clear <= float(self.log_min_clear)):
-            need_print = True
-
-        # if need_print:
-        #     print(
-        #         f"[constr-check] step={self._steps} act={action_idx}  "
-        #         f"mask=[{t0_mask:.3f},{t1_mask:.3f}]  act=[{t0_act:.3f},{t1_act:.3f}]  "
-        #         f"min_clear={min_clear:.3f}"
-        #     )
+        
+        plt.tight_layout()
+        
+        if mode == 'human':
+            plt.draw()
+            plt.pause(0.001)
+        
+        return self._fig
