@@ -284,8 +284,8 @@ def main():
                        help='Disable rendering')
     parser.add_argument('--stochastic', action='store_true',
                        help='Use stochastic policy instead of deterministic')
-    parser.add_argument('--seed', type=int, default=42,
-                       help='Random seed')
+    parser.add_argument('--seed', type=int, default=None,
+                       help='Random seed (omit for different maps each run)')
     parser.add_argument('--single', action='store_true',
                        help='Run single environment test with detailed output')
     parser.add_argument('--visualize_policy', action='store_true',

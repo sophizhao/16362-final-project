@@ -64,16 +64,13 @@ class Agent:
         obs_dict = env._compute_obs()
         obs_flat = wrapper.flatten_obs(obs_dict)
         
-        path = []
         timestep = 0
-        
+        path = [(env.agent_pos[0], env.agent_pos[1], timestep)]
+
         # Convert dynamic obstacles list to a set for O(1) lookup: {(y,x,t)}
         constraint_set = set(dynamic_obstacles)
 
         for step in range(self.max_steps):
-            current_pos = (env.agent_pos[0], env.agent_pos[1], timestep)
-            path.append(current_pos)
-            
             if np.array_equal(env.agent_pos, self.goal):
                 break
             
@@ -101,6 +98,7 @@ class Agent:
             obs_dict, reward, terminated, truncated, info = env.step(action_int)
             obs_flat = wrapper.flatten_obs(obs_dict)
             timestep += 1
+            path.append((env.agent_pos[0], env.agent_pos[1], timestep))
             
             if terminated or truncated:
                 break
@@ -318,6 +316,14 @@ class PBSPlanner:
         print("PBS failed to find a solution.")
         return None
 
+    def _completion_time(self, agent_id, path):
+        """Return first timestep where agent reaches its goal (fallback to end)."""
+        goal = tuple(self.agents[agent_id].goal)
+        for idx, (y, x, _) in enumerate(path):
+            if (y, x) == goal:
+                return idx
+        return len(path) - 1
+
     def visualize_solution(self, solution, animate=True, delay=0.1, save_path=None):
         """Visualizes the found solution."""
         if not solution:
@@ -326,8 +332,8 @@ class PBSPlanner:
 
         fig, ax = plt.subplots(figsize=(10, 10))
         
-        # Calculate max time
-        max_time = max(max(t for _, _, t in path) for path in solution.values())
+        # Calculate max time until all agents reach their goals
+        max_time = max(self._completion_time(agent_id, path) for agent_id, path in solution.items())
         
         if animate:
             plt.ion()
