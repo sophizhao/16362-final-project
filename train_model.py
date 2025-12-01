@@ -20,6 +20,10 @@ from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from environment import PathPlanningMaskEnv
 
 
+'''
+To train: python train_model.py --config config.yaml           
+'''
+
 def generate_random_obstacles(map_size=(10, 10), obstacle_density=0.2, seed=None):
     """
     Generate random obstacles in the grid.
@@ -51,8 +55,6 @@ class FlattenDictWrapper(gym.Wrapper):
     """
     def __init__(self, env):
         super().__init__(env)
-        # Calculate total observation size
-        # scan(16) + goal_vec(2) + dist_grad(2) + dist_phi(1) + hist(6) = 27
         obs_size = (
             env.observation_space['scan'].shape[0] +
             env.observation_space['goal_vec'].shape[0] +

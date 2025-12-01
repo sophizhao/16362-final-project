@@ -5,6 +5,9 @@ from environment import PathPlanningMaskEnv
 import time
 import matplotlib.pyplot as plt
 
+'''
+To test: python test_model.py --model logs/final_model --episodes 5
+'''
 
 def generate_random_obstacles(map_size=(10, 10), obstacle_density=0.2, seed=None):
     """Generate random obstacles in the grid."""
