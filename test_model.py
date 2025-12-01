@@ -128,9 +128,9 @@ def test_model(model_path, num_episodes=10, obstacle_density=0.2,
             if animate:
                 print(f"  Step {steps}: {action_names[action_int]} -> {env.agent_pos}, reward={reward:.2f}")
             
-            if render and animate:
+            if render:
                 env.render()
-                plt.pause(delay)  
+                plt.pause(delay if animate else 0.001)
         
         if render:
             if animate:
@@ -256,10 +256,11 @@ def test_single_environment(model_path, visualize_policy=False, animate=True, de
         if animate:
             env.render()
             plt.pause(delay)
+        else:
+            env.render()
+            plt.pause(0.001)
         
         if done:
-            if not animate:
-                env.render()
             print(f"\nFinal state:")
             env.render()
             if info['reached']:
