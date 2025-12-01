@@ -44,7 +44,7 @@ class FlattenDictWrapper:
         ], dtype=np.float32)
 
 
-def test_model(model_path, num_episodes=10, obstacle_density=0.2, 
+def test_model(model_path, num_episodes=10, obstacle_density=0.1, 
                render=True, deterministic=True, seed=None, animate=False, delay=0.1):
     """
     Test a trained model on random environments.

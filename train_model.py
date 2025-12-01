@@ -24,7 +24,7 @@ from environment import PathPlanningMaskEnv
 To train: python train_model.py --config config.yaml           
 '''
 
-def generate_random_obstacles(map_size=(10, 10), obstacle_density=0.2, seed=None):
+def generate_random_obstacles(map_size=(10, 10), obstacle_density=0.1, seed=None):
     """
     Generate random obstacles in the grid.
     Ensures start (0,0) and goal (H-1, W-1) are free.
