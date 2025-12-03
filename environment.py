@@ -101,12 +101,9 @@ class PathPlanningMaskEnv(gym.Env):
                             break
                         visited[yn, xn] = True
                         q.append((yn, xn))
-
-        # BFS from goal
         dist[gy, gx] = 0.0
         q = bfs_deque([(gy, gx)])
         neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-
         while q:
             y0, x0 = q.popleft()
             for dy, dx in neighbors:

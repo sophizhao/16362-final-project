@@ -29,14 +29,17 @@ class Agent:
         self.map_size = map_size
         self.static_obstacles = static_obstacles
         self.max_steps = max_steps
-        self.path = []  # List of (y, x, t)
+        self.path = []  # List of (y, x, timestamp)
 
-    def find_path(self, dynamic_obstacles):
+    def find_path(self, vertex_constraints, edge_constraints=None):
         """
-        Plan a path avoiding static obstacles and higher-priority agent paths (dynamic_obstacles).
-        dynamic_obstacles: list of (y, x, t) occupied by higher priority agents.
+        Plan a path avoiding static obstacles and higher-priority agent paths.
+        
+        vertex_constraints: list of (y, x, t) occupied by higher priority agents.
+        edge_constraints: set of (from_y, from_x, to_y, to_x, t) representing forbidden moves
+                         (because another agent is moving in the opposite direction).
         """
-        # Initialize environment for this specific search
+        edge_constraints = edge_constraints or set()
         env = PathPlanningMaskEnv(
             map_size=self.map_size,
             obstacles=self.static_obstacles,
@@ -47,14 +50,14 @@ class Agent:
         env.agent_pos = self.start.copy()
         env.goal = self.goal.copy()
         
-        # Precompute distance field (Dijkstra/BFS style heuristic for the Env)
+
+        # backward dijkstra heuristic 
         env.dist_map = env._compute_distance_map(env.goal)
         reachable = np.isfinite(env.dist_map)
         env.max_potential = float(np.max(env.dist_map[reachable])) if np.any(reachable) else 1.0
         env.dist_map[~reachable] = env.max_potential
         env._compute_gradient_field()
         
-        # Reset observation
         env.step_count = 0
         env.action_history.clear()
         for _ in range(env.hist_len):
@@ -67,65 +70,98 @@ class Agent:
         timestep = 0
         path = [(env.agent_pos[0], env.agent_pos[1], timestep)]
 
-        # Convert dynamic obstacles list to a set for O(1) lookup: {(y,x,t)}
-        constraint_set = set(dynamic_obstacles)
+        # O(1) lookup
+        vertex_set = set(vertex_constraints)
+        edge_set = set(edge_constraints)
 
         for step in range(self.max_steps):
             if np.array_equal(env.agent_pos, self.goal):
                 break
             
-            # 1. Get preferred action from DQN
+            # get predicted action
             action, _ = self.model.predict(obs_flat, deterministic=True)
             action_int = int(action)
             
-            # 2. Check validity against Dynamic Obstacles (Higher Priority Agents)
+            # next step for agent
             moves = {0: (0, 0), 1: (-1, 0), 2: (1, 0), 3: (0, -1), 4: (0, 1)}
+            curr_y, curr_x = env.agent_pos
             dy, dx = moves[action_int]
-            next_y, next_x = env.agent_pos[0] + dy, env.agent_pos[1] + dx
-            next_state = (next_y, next_x, timestep + 1)
+            next_y, next_x = curr_y + dy, curr_x + dx
+            next_t = timestep + 1
             
-            # If preferred action hits a higher priority agent, wait (action 0)
-            # If waiting also hits them (vertex conflict), we are stuck (simple collision logic)
-            if next_state in constraint_set:
-                action_int = 0 # Try to wait
-                next_state_wait = (env.agent_pos[0], env.agent_pos[1], timestep + 1)
-                if next_state_wait in constraint_set:
-                    # Even waiting causes collision. In a full search, we might backtrack.
-                    # Here, with DQN, we just take the collision or stay put.
-                    pass 
+            # vertex constraint, if its occupied rn
+            vertex_blocked = (next_y, next_x, next_t) in vertex_set
+            
+            # edge constraint, swapping
+            edge_blocked = (curr_y, curr_x, next_y, next_x, timestep) in edge_set
+            
+            if vertex_blocked or edge_blocked:
+                # can't really inject actions with DQN (not maskable with API)
+                # just wait
+                wait_pos = (curr_y, curr_x, next_t)
+                if wait_pos not in vertex_set:
+                    action_int = 0  # wait
+                    block_reason = "VERTEX" if vertex_blocked else "EDGE"
+                    print(f"  [PBS] Agent {self.id} t={timestep}: forced WAIT at ({curr_y},{curr_x}) due to {block_reason} constraint (wanted ({next_y},{next_x}))")
+                else:
+                    # replan?!
+                    found_valid = False
+                    for alt_action in [1, 2, 3, 4]:  # up, down, left, right
+                        if alt_action == action_int:
+                            continue
+                        ady, adx = moves[alt_action]
+                        alt_y, alt_x = curr_y + ady, curr_x + adx
+                        alt_vertex_ok = (alt_y, alt_x, next_t) not in vertex_set
+                        alt_edge_ok = (curr_y, curr_x, alt_y, alt_x, timestep) not in edge_set
+                        in_bounds = 0 <= alt_y < self.map_size[0] and 0 <= alt_x < self.map_size[1]
+                        not_static = (alt_y, alt_x) not in self.static_obstacles
+                        if alt_vertex_ok and alt_edge_ok and in_bounds and not_static:
+                            action_int = alt_action
+                            found_valid = True
+                            action_names = {1: "UP", 2: "DOWN", 3: "LEFT", 4: "RIGHT"}
+                            print(f"  [PBS] Agent {self.id} t={timestep}: rerouted to ({alt_y},{alt_x}) [{action_names[alt_action]}] (wanted ({next_y},{next_x}))")
+                            break
+                    if not found_valid:
+                        action_int = 0  # Forced wait, may cause issues
+                        print(f"  [PBS] Agent {self.id} t={timestep}: FORCED WAIT at ({curr_y},{curr_x}) - no valid alternatives!") 
 
-            # 3. Step Environment
+
             obs_dict, reward, terminated, truncated, info = env.step(action_int)
             obs_flat = wrapper.flatten_obs(obs_dict)
             timestep += 1
             path.append((env.agent_pos[0], env.agent_pos[1], timestep))
             
+            # found goal
             if terminated or truncated:
                 break
-                
-        # Fill remaining steps if reached goal early to ensure safety for lower priority agents
         last_pos = path[-1]
-        for t in range(len(path), self.max_steps + 5): # Buffer
+        for t in range(len(path), self.max_steps + 5):
             path.append((last_pos[0], last_pos[1], t))
           
-        print(path)
+        # print(path)
         return path
 
 class PBSNode:
     """
     Node in the PBS High-Level Search Tree.
     Contains partial ordering constraints and the current solution plan.
+    High level code taken from https://github.com/Jiaoyang-Li/PBS/tree/master/src
     """
-    def __init__(self, priorities=None, solution=None, cost=0):
+    def __init__(self, priorities=None, solution=None, cost=0, parent=None, node_id=0):
         # priorities: Set of tuples (high_id, low_id) -> high_id has priority over low_id
+        # unset when you make root node
         self.priorities = set(priorities) if priorities else set()
-        # solution: Dict {agent_id: path}
+        # solution: dict {agent_id: path}
         self.solution = solution if solution else {}
         self.cost = cost
-        self.conflicts = [] 
+        self.conflicts = []
+        self.parent = parent
+        self.node_id = node_id
+        self.children = []
+        self.collision_info = None  # (a1, a2, loc, t) that caused this branch
+        self.added_priority = None  
     
     def __lt__(self, other):
-        # For PriorityQueue: lower cost is better, then fewer conflicts
         return self.cost < other.cost
 
     def get_priority_graph(self, num_agents):
@@ -165,6 +201,11 @@ class PBSPlanner:
         # Stats
         self.generated_nodes = 0
         self.expanded_nodes = 0
+        
+        # Tree tracking
+        self.root_node = None
+        self.all_nodes = []
+        self.solution_node = None
 
     def add_agent(self, agent_id, model_path, start_pos, goal_pos, color):
         model = DQN.load(model_path)
@@ -203,65 +244,139 @@ class PBSPlanner:
     def update_plan(self, node, agents_to_replan):
         """
         Replans the path for specific agents given the node's priorities.
-        In strict PBS, we only replan the agent that got a new lower-priority constraint.
         """
-        # 1. Determine Global Planning Order based on priorities
         order = self.topological_sort(node.priorities)
         if order is None:
-            return False # Invalid priority (cycle)
+            return False  # Invalid priority (cycle)
 
-        # 2. Collect Space-Time Constraints (Occupied cells by higher priority agents)
-        # We must iterate in topological order.
-        occupied_spacetime = set()
+        vertex_constraints = set()
+        edge_constraints = set()
         
         for agent_id in order:
             agent = self.agents[agent_id]
             
-            # If agent needs replanning OR has no path yet
-            if agent_id in agents_to_replan or agent_id not in node.solution:
-                # Plan path considering all currently occupied space-time slots
-                # Note: occupied_spacetime only contains paths of agents earlier in 'order'
-                path = agent.find_path(list(occupied_spacetime))
-                node.solution[agent_id] = path
+            # KEY CHANGE: At root (no priorities), plan WITHOUT constraints
+            # This allows collisions to be detected, triggering PBS branching
+            if len(node.priorities) == 0:
+                # Root node: plan independently (no constraints from other agents)
+                if agent_id in agents_to_replan or agent_id not in node.solution:
+                    path = agent.find_path([], set())  # Empty constraints!
+                    node.solution[agent_id] = path
+            else:
+                # Non-root: respect priority ordering
+                if agent_id in agents_to_replan or agent_id not in node.solution:
+                    path = agent.find_path(list(vertex_constraints), edge_constraints)
+                    node.solution[agent_id] = path
             
             # Add this agent's path to constraints for subsequent agents
             current_path = node.solution[agent_id]
-            for y, x, t in current_path:
-                occupied_spacetime.add((y, x, t))
+            for i, (y, x, t) in enumerate(current_path):
+                vertex_constraints.add((y, x, t))
+                if i + 1 < len(current_path):
+                    ny, nx, nt = current_path[i + 1]
+                    if (ny, nx) != (y, x):
+                        edge_constraints.add((ny, nx, y, x, t))
                 
-        # Calculate Cost
         node.cost = sum(len(path) for path in node.solution.values())
+        self._print_paths_by_timestep(node.solution)
+        
         return True
 
-    def find_collisions(self, solution):
-        """
-        Find the first collision between any two agents.
-        Returns: (agent_i, agent_j, location, time) or None
-        """
-        # Create a lookup: (y,x,t) -> agent_id
-        occupied = {}
+    def _print_paths_by_timestep(self, solution, max_timesteps=20):
+        """Print all agents' positions grouped by timestep."""
+        if not solution:
+            return
         
-        # Check Vertex Collisions
-        max_len = max(len(p) for p in solution.values())
+        max_len = min(max(len(path) for path in solution.values()), max_timesteps)
+        action_names = {(0,0): "WAIT", (-1,0): "UP", (1,0): "DOWN", (0,-1): "LEFT", (0,1): "RIGHT"}
         
+        print("\n--- Paths by Timestep ---")
         for t in range(max_len):
-            pos_map = {}
-            for aid, path in solution.items():
+            print(f"t={t}:")
+            for agent_id in sorted(solution.keys()):
+                path = solution[agent_id]
                 if t < len(path):
-                    pos = (path[t][0], path[t][1])
-                    if pos in pos_map:
-                        return (pos_map[pos], aid, pos, t)
-                    pos_map[pos] = aid
-        
-        # Note: Edge collisions (swapping cells) are ignored for simplicity 
-        # as per standard DQN grid implementations, but PBS usually checks them.
-        return None
+                    y, x, _ = path[t]
+                    # Determine move direction
+                    if t + 1 < len(path):
+                        ny, nx, _ = path[t + 1]
+                        dy, dx = ny - y, nx - x
+                        move = action_names.get((dy, dx), "?")
+                        print(f"    Agent {agent_id}: ({y},{x}) -> ({ny},{nx}) [{move}]")
+                    else:
+                        print(f"    Agent {agent_id}: ({y},{x}) [DONE]")
+        print("-------------------------\n")
+
+    def find_collisions(self, solution):
+      """
+      Find the first collision between any two agents.
+      Returns: (agent_i, agent_j, location, time) or None
+      """
+      if not solution:
+          return None
+      
+      # Find maximum path length to check all timesteps
+      max_len = max(len(path) for path in solution.values())
+      
+      # Check each timestep for vertex collisions
+      for t in range(max_len):
+          pos_at_time = {}  # Maps (y, x) -> agent_id at this timestep
+          
+          for agent_id, path in solution.items():
+              # Get agent position at time t
+              if t < len(path):
+                  y, x, time_coord = path[t]
+                  pos = (y, x)
+              else:
+                  # Agent finished - shouldn't happen with proper padding, 
+                  # but handle gracefully
+                  continue
+              
+              # Check if another agent is at same position at same time
+              if pos in pos_at_time:
+                  other_agent = pos_at_time[pos]
+                  print(f"  -> Vertex collision detected: Agent {agent_id} and {other_agent} at {pos} at t={t}")
+                  return (agent_id, other_agent, pos, t)
+              
+              pos_at_time[pos] = agent_id
+      
+      # Check edge collisions (agents swapping positions)
+      for t in range(max_len - 1):
+          for agent_i, path_i in solution.items():
+              for agent_j, path_j in solution.items():
+                  if agent_i >= agent_j:  # Only check each pair once
+                      continue
+                  
+                  if t >= len(path_i) - 1 or t >= len(path_j) - 1:
+                      continue
+                  
+                  # Position at time t
+                  pos_i_t = (path_i[t][0], path_i[t][1])
+                  pos_j_t = (path_j[t][0], path_j[t][1])
+                  
+                  # Position at time t+1
+                  pos_i_t1 = (path_i[t+1][0], path_i[t+1][1])
+                  pos_j_t1 = (path_j[t+1][0], path_j[t+1][1])
+                  
+                  # Check if agents swapped positions (edge collision)
+                  if pos_i_t == pos_j_t1 and pos_j_t == pos_i_t1:
+                      print(f"  -> Edge collision detected: Agent {agent_i} and {agent_j} swapping {pos_i_t}<->{pos_j_t1} at t={t}")
+                      return (agent_i, agent_j, pos_i_t, t)
+      
+      return None
 
     def solve(self):
         print(f"Starting PBS for {len(self.agents)} agents...")
         
+        # Reset tree tracking
+        self.all_nodes = []
+        self.solution_node = None
+        
         # 1. Root Node
-        root = PBSNode()
+        root = PBSNode(node_id=0)
+        self.root_node = root
+        self.all_nodes.append(root)
+        
         # Initially, plan all agents (empty priorities -> order doesn't matter yet, 
         # but topological sort will give default order)
         success = self.update_plan(root, set(self.agent_ids))
@@ -270,9 +385,12 @@ class PBSPlanner:
         # 2. Check root conflicts
         collision = self.find_collisions(root.solution)
         if collision is None:
+            self.solution_node = root
+            self.print_pbs_tree()
             return root.solution
             
         root.conflicts = [collision]
+        root.collision_info = collision
         
         # 3. Stack for DFS (Depth First Search is standard for PBS to save memory)
         # Use a PriorityQueue (Open List) if you want Best-First Search
@@ -287,34 +405,142 @@ class PBSPlanner:
             
             if collision is None:
                 print(f"Solution found! Cost: {curr_node.cost}")
+                self.solution_node = curr_node
+                self.print_pbs_tree()
                 return curr_node.solution
             
             a1, a2, loc, t = collision
-            print(f"Node {self.expanded_nodes}: Collision {a1}-{a2} at {loc} t={t}")
+            curr_node.collision_info = collision
+            print(f"Node {curr_node.node_id}: Collision {a1}-{a2} at {loc} t={t}")
             
             # Branching: Resolve (a1, a2) collision
             # Option 1: a1 > a2 (a1 has priority)
-            child1 = PBSNode(priorities=copy.deepcopy(curr_node.priorities), 
-                             solution=copy.deepcopy(curr_node.solution))
+            child1 = PBSNode(
+                priorities=copy.deepcopy(curr_node.priorities), 
+                solution=copy.deepcopy(curr_node.solution),
+                parent=curr_node,
+                node_id=len(self.all_nodes)
+            )
             child1.priorities.add((a1, a2))
+            child1.added_priority = (a1, a2)
             
             # Only replan a2 (the lower priority one)
             if self.update_plan(child1, {a2}):
+                curr_node.children.append(child1)
+                self.all_nodes.append(child1)
                 open_list.append(child1)
                 self.generated_nodes += 1
                 
             # Option 2: a2 > a1 (a2 has priority)
-            child2 = PBSNode(priorities=copy.deepcopy(curr_node.priorities), 
-                             solution=copy.deepcopy(curr_node.solution))
+            child2 = PBSNode(
+                priorities=copy.deepcopy(curr_node.priorities), 
+                solution=copy.deepcopy(curr_node.solution),
+                parent=curr_node,
+                node_id=len(self.all_nodes)
+            )
             child2.priorities.add((a2, a1))
+            child2.added_priority = (a2, a1)
             
             # Only replan a1
             if self.update_plan(child2, {a1}):
+                curr_node.children.append(child2)
+                self.all_nodes.append(child2)
                 open_list.append(child2)
                 self.generated_nodes += 1
                 
         print("PBS failed to find a solution.")
+        self.print_pbs_tree()
         return None
+
+    def print_pbs_tree(self):
+        """Print the PBS search tree structure."""
+        print("\n" + "=" * 60)
+        print("PBS SEARCH TREE")
+        print("=" * 60)
+        
+        if not self.root_node:
+            print("  (empty tree)")
+            return
+        
+        def print_node(node, prefix="", is_last=True):
+            connector = "└── " if is_last else "├── "
+            
+            # Node info
+            node_str = f"Node {node.node_id}"
+            if node.added_priority:
+                high, low = node.added_priority
+                node_str += f" [Added: {high}>{low}]"
+            
+            # Collision info
+            if node.collision_info:
+                a1, a2, loc, t = node.collision_info
+                node_str += f" | Collision: {a1}-{a2} at {loc} t={t}"
+            
+            # Solution status
+            if node == self.solution_node:
+                node_str += " ✓ SOLUTION"
+            
+            # Cost
+            node_str += f" | Cost: {node.cost}"
+            
+            # Priorities
+            node_str += f" | Priorities: {{{', '.join(f'{h}>{l}' for h, l in sorted(node.priorities))}}}"
+            
+            print(prefix + connector + node_str)
+            
+            # Print children
+            child_prefix = prefix + ("    " if is_last else "│   ")
+            for i, child in enumerate(node.children):
+                print_node(child, child_prefix, i == len(node.children) - 1)
+        
+        print_node(self.root_node)
+        
+        # Summary
+        print("\n" + "-" * 60)
+        print(f"Total nodes generated: {self.generated_nodes}")
+        print(f"Total nodes expanded:  {self.expanded_nodes}")
+        if self.solution_node:
+            print(f"Solution found at Node {self.solution_node.node_id}")
+            print(f"Final priorities: {{{', '.join(f'{h}>{l}' for h, l in sorted(self.solution_node.priorities))}}}")
+        else:
+            print("No solution found")
+        print("=" * 60 + "\n")
+
+    def print_priority_chain(self):
+        """Print the path from root to solution showing how priorities were added."""
+        if not self.solution_node:
+            print("No solution to trace.")
+            return
+        
+        print("\n" + "=" * 60)
+        print("PRIORITY CHAIN (Root -> Solution)")
+        print("=" * 60)
+        
+        # Trace path from solution back to root
+        path = []
+        node = self.solution_node
+        while node:
+            path.append(node)
+            node = node.parent
+        path.reverse()
+        
+        for i, node in enumerate(path):
+            indent = "  " * i
+            if node.parent is None:
+                print(f"{indent}Root (Node 0)")
+                if node.collision_info:
+                    a1, a2, loc, t = node.collision_info
+                    print(f"{indent}  └─ Collision: Agent {a1} vs {a2} at {loc}, t={t}")
+            else:
+                high, low = node.added_priority
+                print(f"{indent}└─ Node {node.node_id}: Added {high} > {low}")
+                if node.collision_info and node != self.solution_node:
+                    a1, a2, loc, t = node.collision_info
+                    print(f"{indent}    └─ Collision: Agent {a1} vs {a2} at {loc}, t={t}")
+                elif node == self.solution_node:
+                    print(f"{indent}    └─ No collisions - SOLUTION FOUND")
+        
+        print("=" * 60 + "\n")
 
     def _completion_time(self, agent_id, path):
         """Return first timestep where agent reaches its goal (fallback to end)."""
@@ -324,18 +550,34 @@ class PBSPlanner:
                 return idx
         return len(path) - 1
 
-    def visualize_solution(self, solution, animate=True, delay=0.1, save_path=None):
-        """Visualizes the found solution."""
+    def visualize_solution(self, solution, animate=True, delay=0.1, save_path=None, save_gif=None):
+        """Visualizes the found solution.
+        
+        Args:
+            solution: Dict of {agent_id: path}
+            animate: Whether to animate the solution
+            delay: Delay between frames in seconds
+            save_path: Path to save final frame as image
+            save_gif: Path to save animation as GIF (e.g., 'solution.gif')
+        """
         if not solution:
             print("No solution to visualize.")
             return
 
+        # Use Agg backend for GIF saving to avoid display issues
+        if save_gif:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+        
         fig, ax = plt.subplots(figsize=(10, 10))
         
         # Calculate max time until all agents reach their goals
         max_time = max(self._completion_time(agent_id, path) for agent_id, path in solution.items())
         
-        if animate:
+        frames = []  # Store frames for GIF
+        
+        if animate and not save_gif:
             plt.ion()
             
         for timestep in range(max_time + 1):
@@ -371,92 +613,167 @@ class PBSPlanner:
             ax.set_title(f"PBS Solution - Time: {timestep}/{max_time}")
             ax.invert_yaxis() # Matrix coordinates
             
-            if animate:
+            # Capture frame for GIF using savefig to buffer
+            if save_gif:
+                import io
+                buf = io.BytesIO()
+                fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+                buf.seek(0)
+                try:
+                    from PIL import Image
+                    image = Image.open(buf)
+                    frames.append(image.copy())
+                    image.close()
+                except ImportError:
+                    print("Error: 'Pillow' package required for GIF export.")
+                    print("Install with: pip install Pillow")
+                    return
+                buf.close()
+            
+            if animate and not save_gif:
                 plt.draw()
                 plt.pause(delay)
-            elif timestep == 0:
-                plt.show() # Just show start if not animating
+            elif timestep == 0 and not save_gif:
+                plt.show()
+        
+        # Save GIF
+        if save_gif and frames:
+            # Convert delay from seconds to milliseconds
+            duration_ms = int(delay * 1000)
+            frames[0].save(
+                save_gif,
+                save_all=True,
+                append_images=frames[1:],
+                duration=duration_ms,
+                loop=0
+            )
+            print(f"GIF saved to: {save_gif}")
                 
         if save_path:
             plt.savefig(save_path)
+            print(f"Image saved to: {save_path}")
             
-        if animate:
+        if animate and not save_gif:
             plt.ioff()
             plt.show()
+        
+        plt.close(fig)
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, required=True, help='Path to DQN model')
-    parser.add_argument('--num_agents', type=int, default=4)
-    parser.add_argument('--map_size', type=int, nargs=2, default=[10, 10])
-    parser.add_argument('--obstacle_density', type=float, default=0.1)
     parser.add_argument('--max_steps', type=int, default=100)
-    parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--no_anim', action='store_true')
+    parser.add_argument('--save_gif', type=str, default=None, help='Path to save animation as GIF')
+    parser.add_argument('--save_img', type=str, default=None, help='Path to save final frame as image')
     args = parser.parse_args()
     
-    # Generate Map
-    H, W = args.map_size
-    obstacles = []
-    for y in range(H):
-        for x in range(W):
-            if np.random.random() < args.obstacle_density:
-                obstacles.append((y, x))
-                
+    # 10x10 map with funnel from top-left corner to center
+    H, W = 10, 10
+    
+    #  Funnel layout:
+    #
+    #     0   1   2   3   4   5   6   7   8   9
+    #   ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+    #  0│A0 │A1 │   │ X │ X │ X │ X │ X │ X │ X │
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  1│A2 │A3 │   │ X │ X │ X │ X │ X │ X │ X │
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  2│   │   │   │ X │ X │ X │ X │ X │ X │ X │
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  3│ X │ X │   │ X │ X │ X │ X │ X │ X │ X │  <- Funnel narrows here
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  4│ X │ X │   │   │   │   │   │ X │ X │ X │  <- 1-cell wide passage
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  5│ X │ X │ X │ X │G0 │G1 │   │   │   │   │  <- Goals in center
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  6│ X │ X │ X │ X │G2 │G3 │   │   │   │   │
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  7│ X │ X │ X │ X │ X │ X │   │   │   │   │
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  8│ X │ X │ X │ X │ X │ X │   │   │   │   │
+    #   ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+    #  9│ X │ X │ X │ X │ X │ X │   │   │   │   │
+    #   └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    #
+    #  Path: Agents must go (0,0-1) -> down column 2 -> right through row 4 -> goals
+    #  The corridor at column 2 and row 4 is only 1 cell wide!
+    
+    obstacles = [
+        # Right wall blocking direct access (columns 3-9, rows 0-3)
+        (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9),
+        (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9),
+        (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 8), (2, 9),
+        (3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8), (3, 9),
+        
+        # Left wall forcing agents into corridor (columns 0-1, rows 3+)
+        (3, 0), (3, 1),
+        (4, 0), (4, 1),
+        (5, 0), (5, 1), (5, 2), (5, 3),
+        (6, 0), (6, 1), (6, 2), (6, 3),
+        (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (7, 5),
+        (8, 0), (8, 1), (8, 2), (8, 3), (8, 4), (8, 5),
+        (9, 0), (9, 1), (9, 2), (9, 3), (9, 4), (9, 5),
+        
+        # Bottleneck - narrow passage at row 4
+        (4, 7), (4, 8), (4, 9),
+    ]
+    
     planner = PBSPlanner(map_size=(H, W), obstacles=obstacles, max_steps=args.max_steps)
     
-   # 1. Identify all free cells
-    free_cells = [(y, x) for y in range(H) for x in range(W) if (y, x) not in obstacles]
-    num_free = len(free_cells)
-
-    if num_free < args.num_agents:
-        raise ValueError("Map is too small / too many obstacles for this number of agents.")
-
-    # 2. Select Unique Start Positions
-    # We pick N unique indices from the free_cells list
-    start_indices = np.random.choice(num_free, args.num_agents, replace=False)
-    starts = [free_cells[i] for i in start_indices]
-
-    # 3. Select Unique Goal Positions
-    goals = []
-    chosen_goal_set = set()
-
-    for i in range(args.num_agents):
-        while True:
-            # Pick a random candidate for the goal
-            idx = np.random.randint(num_free)
-            candidate = free_cells[idx]
-
-            # Constraint A: Goal must be unique (no two agents have same goal)
-            # Constraint B: Goal cannot be the agent's own start position
-            if (candidate not in chosen_goal_set) and (candidate != starts[i]):
-                goals.append(candidate)
-                chosen_goal_set.add(candidate)
-                break
-
-    # 4. Add Agents to Planner
-    colors = ['red', 'blue', 'green', 'orange', 'purple', 'cyan', 'brown', 'pink']
+    # All 4 agents start in top-left 2x2 corner
+    # Goals are in the center 2x2 area
+    agent_configs = [
+        {"id": 0, "start": (0, 0), "goal": (5, 4), "color": "red"},
+        {"id": 1, "start": (0, 1), "goal": (5, 5), "color": "blue"},
+        {"id": 2, "start": (1, 0), "goal": (6, 4), "color": "green"},
+        {"id": 3, "start": (1, 1), "goal": (6, 5), "color": "orange"},
+    ]
     
-    print("Map Setup:")
-    for i in range(args.num_agents):
-        start_pos = starts[i]
-        goal_pos = goals[i]
-        color = colors[i % len(colors)]
-        
-        planner.add_agent(i, args.model, start_pos, goal_pos, color)
-        print(f"  Agent {i}: {start_pos} -> {goal_pos}")
+    print("=" * 50)
+    print("FUNNEL SCENARIO")
+    print("=" * 50)
+    print("\nMap: 10x10 with funnel from top-left to center")
+    print("All agents start in corner, must pass through 1-cell corridor!\n")
+    
+    print("Agent Setup:")
+    for cfg in agent_configs:
+        planner.add_agent(cfg["id"], args.model, cfg["start"], cfg["goal"], cfg["color"])
+        print(f"  Agent {cfg['id']}: {cfg['start']} -> {cfg['goal']}")
+    
+    print("\nExpected behavior:")
+    print("  - All agents must traverse column 2 (1-cell wide)")
+    print("  - Then squeeze through row 4 corridor")
+    print("  - Agents MUST wait for each other - no passing possible!")
+    print("  - PBS will assign strict priority ordering\n")
+    
     # Solve
     start_time = time.time()
     solution = planner.solve()
     duration = time.time() - start_time
     
+    print("\n" + "=" * 50)
     if solution:
-        print(f"\nSolved in {duration:.2f}s")
+        print(f"SOLVED in {duration:.2f}s")
         print(f"Nodes Generated: {planner.generated_nodes}")
         print(f"Nodes Expanded: {planner.expanded_nodes}")
-        planner.visualize_solution(solution, animate=not args.no_anim)
+        
+        # Print final priorities
+        print("\nFinal path lengths:")
+        for agent_id, path in solution.items():
+            completion = planner._completion_time(agent_id, path)
+            print(f"  Agent {agent_id}: {completion} steps")
+            
+        planner.visualize_solution(
+            solution, 
+            animate=not args.no_anim, 
+            delay=0.3,
+            save_gif=args.save_gif,
+            save_path=args.save_img
+        )
     else:
-        print("No solution found.")
+        print("NO SOLUTION FOUND")
+    print("=" * 50)
 
 if __name__ == "__main__":
     main()
