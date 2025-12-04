@@ -9,7 +9,7 @@ from collections import deque
 class PathPlanningMaskEnv(gym.Env):
     """
     Simplified gridworld for DQN path planning:
-      - 10x10 grid with random obstacles
+      - Grid with random obstacles
       - Simple 5-action movement (stay, up, down, left, right)
       - LiDAR scans
       - Distance-based potential field
@@ -27,9 +27,7 @@ class PathPlanningMaskEnv(gym.Env):
         self.hist_len = hist_len
         self.step_count = 0
 
-        # -------------------------
         # Map / obstacles
-        # -------------------------
         self.map = np.zeros((self.H, self.W), dtype=np.uint8)
         if obstacles is not None:
             for (y, x) in obstacles:
@@ -61,17 +59,12 @@ class PathPlanningMaskEnv(gym.Env):
         self.completion_bonus = 10.0
         self.collision_penalty = -10.0
 
-        # -------------------------
         # Distance field and gradient (computed on reset)
-        # -------------------------
         self.dist_map = None
         self.grad_x = None
         self.grad_y = None
         self.max_potential = 0.0
 
-    # ============================================================
-    # -------------------  Helper Methods ------------------------
-    # ============================================================
 
     def _compute_distance_map(self, goal_pos):
         """

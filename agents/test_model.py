@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 from stable_baselines3 import DQN
-from environment import PathPlanningMaskEnv
+from agents.environment import PathPlanningMaskEnv
 import time
 import matplotlib.pyplot as plt
 

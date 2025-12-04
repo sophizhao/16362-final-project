@@ -10,7 +10,7 @@ import io
 import os
 import numpy as np
 from stable_baselines3 import DQN
-from environment import PathPlanningMaskEnv
+from agents.environment import PathPlanningMaskEnv
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
@@ -18,7 +18,9 @@ from collections import deque, defaultdict
 import copy
 import time
 import heapq
-from rrt_baseline import rrt_plan
+from agents.rrt_baseline import rrt_plan
+import argparse
+
 
 class Agent:
     """
@@ -475,7 +477,7 @@ class PBSPlanner:
         """
         order = self.topological_sort(node.priorities)
         if order is None:
-            return False  # Invalid priority (cycle)
+            return False 
 
         vertex_constraints = set()
         edge_constraints = set()
@@ -483,12 +485,10 @@ class PBSPlanner:
         for agent_id in order:
             agent = self.agents[agent_id]
             
-            # KEY CHANGE: At root (no priorities), plan WITHOUT constraints
-            # This allows collisions to be detected, triggering PBS branching
             if len(node.priorities) == 0:
-                # Root node: plan independently (no constraints from other agents)
+                # Root node: plan independently
                 if agent_id in agents_to_replan or agent_id not in node.solution:
-                    path = agent.find_path([], set())  # Empty constraints!
+                    path = agent.find_path([], set()) 
                     node.solution[agent_id] = path
             else:
                 # Non-root: respect priority ordering
@@ -543,7 +543,6 @@ class PBSPlanner:
       if not solution:
           return None
       
-      # Find maximum path length to check all timesteps
       max_len = max(len(path) for path in solution.values())
       
       # Check each timestep for vertex collisions
@@ -551,13 +550,11 @@ class PBSPlanner:
           pos_at_time = {}  # Maps (y, x) -> agent_id at this timestep
           
           for agent_id, path in solution.items():
-              # Get agent position at time t
               if t < len(path):
                   y, x, time_coord = path[t]
                   pos = (y, x)
               else:
-                  # Agent finished - shouldn't happen with proper padding, 
-                  # but handle gracefully
+                  # Agent finished?
                   continue
               
               # Check if another agent is at same position at same time
@@ -572,7 +569,7 @@ class PBSPlanner:
       for t in range(max_len - 1):
           for agent_i, path_i in solution.items():
               for agent_j, path_j in solution.items():
-                  if agent_i >= agent_j:  # Only check each pair once
+                  if agent_i >= agent_j: 
                       continue
                   
                   if t >= len(path_i) - 1 or t >= len(path_j) - 1:
@@ -605,13 +602,11 @@ class PBSPlanner:
         self.all_nodes = []
         self.solution_node = None
         
-        # 1. Root Node
         root = PBSNode(node_id=0)
         self.root_node = root
         self.all_nodes.append(root)
         
-        # Initially, plan all agents (empty priorities -> order doesn't matter yet, 
-        # but topological sort will give default order)
+        # Initially, plan all agents with empty priorities
         success = self.update_plan(root, set(self.agent_ids))
         if timed_out():
             print("PBS solve timed out during root planning.")
@@ -619,7 +614,6 @@ class PBSPlanner:
             return None
         if not success: return None
         
-        # 2. Check root conflicts
         collision = self.find_collisions(root.solution)
         if collision is None:
             self.solution_node = root
@@ -629,8 +623,7 @@ class PBSPlanner:
         root.conflicts = [collision]
         root.collision_info = collision
         
-        # 3. Stack for DFS (Depth First Search is standard for PBS to save memory)
-        # Use a PriorityQueue (Open List) if you want Best-First Search
+        # DFS search for solution
         open_list = [root] 
         self.generated_nodes = 1
         
@@ -655,7 +648,7 @@ class PBSPlanner:
             print(f"Node {curr_node.node_id}: Collision {a1}-{a2} at {loc} t={t}")
             
             # Branching: Resolve (a1, a2) collision
-            # Option 1: a1 > a2 (a1 has priority)
+            # a1 > a2 (a1 has priority)
             child1 = PBSNode(
                 priorities=copy.deepcopy(curr_node.priorities), 
                 solution=copy.deepcopy(curr_node.solution),
@@ -676,7 +669,7 @@ class PBSPlanner:
                 open_list.append(child1)
                 self.generated_nodes += 1
                 
-            # Option 2: a2 > a1 (a2 has priority)
+            # a2 > a1 (a2 has priority)
             child2 = PBSNode(
                 priorities=copy.deepcopy(curr_node.priorities), 
                 solution=copy.deepcopy(curr_node.solution),
@@ -765,7 +758,6 @@ class PBSPlanner:
         print("PRIORITY CHAIN (Root -> Solution)")
         print("=" * 60)
         
-        # Trace path from solution back to root
         path = []
         node = self.solution_node
         while node:
@@ -812,14 +804,12 @@ class PBSPlanner:
         if not solution:
             print("No solution to visualize.")
             return
-        if not animate and not save_gif and not save_path:
-            return
 
-        # Switch to Agg backend when saving GIFs to avoid display issues
-        original_backend = None
+        # Use Agg backend for GIF saving to avoid display issues
         if save_gif:
-            original_backend = matplotlib.get_backend()
-            plt.switch_backend('Agg')
+            import matplotlib
+            matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
         
         fig, ax = plt.subplots(figsize=(10, 10))
         
@@ -884,6 +874,8 @@ class PBSPlanner:
             if animate and not save_gif:
                 plt.draw()
                 plt.pause(delay)
+            elif timestep == 0 and not save_gif:
+                plt.show()
         
         # Save GIF
         if save_gif and frames:
@@ -907,9 +899,6 @@ class PBSPlanner:
             plt.show()
         
         plt.close(fig)
-        
-        if original_backend:
-            plt.switch_backend(original_backend)
 
 def main():
     parser = argparse.ArgumentParser()

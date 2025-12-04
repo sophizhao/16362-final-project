@@ -17,7 +17,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 
-from environment import PathPlanningMaskEnv
+from agents.environment import PathPlanningMaskEnv
 
 
 '''
