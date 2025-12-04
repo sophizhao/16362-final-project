@@ -16,13 +16,16 @@ We implement:
 Important files and folders:
 
 - `environment.py`  
-  Custom Gym-style grid environment used by PBS + DQN.
-
-- `maskedddqn.py`  
-  DQN implementation and training utilities.
+  Custom Gym-style grid environment used by PBS + DQN. Train with `train_model.py`.
 
 - `final_model.zip`  
-  Trained DQN policy. This is the model used in our experiments.
+  Trained DQN policy. This is the model used in our experiments, run on 5 million timesteps.
+  - Observation space: 6 observations of location in grid
+  - Action space: wait, up, down, left, right
+  - Reward function: Cost based on distance from goal (backward Dijkstra heuristic)
+  - Constraints: Will either wait out or try and replan another action
+  - Trained on a Gym environment (20x20 gridworld with grid obstacles) with Stable Baselines3 DQN
+
 
 - `pbs.py`  
   Priority-Based Search multi-agent planner.  
