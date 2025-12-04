@@ -20,11 +20,11 @@ Important files and folders:
 
 - `final_model.zip`  
   Trained DQN policy. This is the model used in our experiments, run on 5 million timesteps.
-  - Observation space: 6 observations of location in grid
-  - Action space: wait, up, down, left, right
-  - Reward function: Cost based on distance from goal (backward Dijkstra heuristic)
-  - Constraints: Will either wait out or try and replan another action
-  - Trained on a Gym environment (20x20 gridworld with grid obstacles) with Stable Baselines3 DQN
+  - observation space: 6 observations of location in grid
+  - action space: wait, up, down, left, right
+  - reward function: Cost based on distance from goal (backward Dijkstra heuristic)
+  - constraints: Will either wait out or try and replan another action
+  - trained on a Gym environment (20x20 gridworld with grid obstacles) with Stable Baselines3 DQN
 
 
 - `pbs.py`  
