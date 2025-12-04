@@ -3,11 +3,7 @@
 This repository contains our final project for **16-362 Mobile Robot Algorithms Laboratory**.
 
 We study **multi-agent navigation** on a discrete 2D grid with static obstacles.  
-Each agent has a start and a goal; the objective is to reach all goals while avoiding:
-
-- **static obstacles**, and  
-- **collisions between agents**.
-
+Each agent has a start and a goal; the objective is to reach all goals while avoiding obstacles and other agents.
 We implement:
 
 - **Priority-Based Search (PBS)** for multi-agent planning on a grid  
