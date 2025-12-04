@@ -1,0 +1,441 @@
+
+--- Random Run 64/70 ---
+Obstacle cells: 39 / 400
+Agent Setup:
+  Agent 0: (10, 10) -> (1, 7) (red)
+  Agent 1: (17, 14) -> (13, 9) (blue)
+  Agent 2: (7, 15) -> (13, 0) (green)
+  Agent 3: (4, 5) -> (1, 1) (orange)
+Starting PBS for 4 agents...
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (10,10) -> (9,10) [UP]
+    Agent 1: (17,14) -> (16,14) [UP]
+    Agent 2: (7,15) -> (7,14) [LEFT]
+    Agent 3: (4,5) -> (3,5) [UP]
+t=1:
+    Agent 0: (9,10) -> (8,10) [UP]
+    Agent 1: (16,14) -> (15,14) [UP]
+    Agent 2: (7,14) -> (8,14) [DOWN]
+    Agent 3: (3,5) -> (2,5) [UP]
+t=2:
+    Agent 0: (8,10) -> (7,10) [UP]
+    Agent 1: (15,14) -> (14,14) [UP]
+    Agent 2: (8,14) -> (9,14) [DOWN]
+    Agent 3: (2,5) -> (1,5) [UP]
+t=3:
+    Agent 0: (7,10) -> (6,10) [UP]
+    Agent 1: (14,14) -> (13,14) [UP]
+    Agent 2: (9,14) -> (9,13) [LEFT]
+    Agent 3: (1,5) -> (1,4) [LEFT]
+t=4:
+    Agent 0: (6,10) -> (5,10) [UP]
+    Agent 1: (13,14) -> (13,13) [LEFT]
+    Agent 2: (9,13) -> (10,13) [DOWN]
+    Agent 3: (1,4) -> (1,3) [LEFT]
+t=5:
+    Agent 0: (5,10) -> (4,10) [UP]
+    Agent 1: (13,13) -> (13,12) [LEFT]
+    Agent 2: (10,13) -> (11,13) [DOWN]
+    Agent 3: (1,3) -> (1,2) [LEFT]
+t=6:
+    Agent 0: (4,10) -> (3,10) [UP]
+    Agent 1: (13,12) -> (13,11) [LEFT]
+    Agent 2: (11,13) -> (11,12) [LEFT]
+    Agent 3: (1,2) -> (1,1) [LEFT]
+t=7:
+    Agent 0: (3,10) -> (2,10) [UP]
+    Agent 1: (13,11) -> (13,10) [LEFT]
+    Agent 2: (11,12) -> (12,12) [DOWN]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=8:
+    Agent 0: (2,10) -> (1,10) [UP]
+    Agent 1: (13,10) -> (13,9) [LEFT]
+    Agent 2: (12,12) -> (13,12) [DOWN]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=9:
+    Agent 0: (1,10) -> (1,9) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,12) -> (13,11) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=10:
+    Agent 0: (1,9) -> (1,8) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,11) -> (13,10) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=11:
+    Agent 0: (1,8) -> (1,7) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,9) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=12:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,9) -> (13,8) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=13:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,8) -> (13,7) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=14:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,7) -> (13,6) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=15:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,6) -> (13,5) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=16:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,5) -> (13,4) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=17:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,4) -> (13,3) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=18:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,3) -> (13,2) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=19:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,2) -> (13,2) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+-------------------------
+
+  -> Vertex collision detected: Agent 2 and 1 at (13, 9) at t=12
+  -> Vertex collision detected: Agent 2 and 1 at (13, 9) at t=12
+Node 0: Collision 2-1 at (13, 9) t=12
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (10,10) -> (9,10) [UP]
+    Agent 1: (17,14) -> (16,14) [UP]
+    Agent 2: (7,15) -> (7,14) [LEFT]
+    Agent 3: (4,5) -> (3,5) [UP]
+t=1:
+    Agent 0: (9,10) -> (8,10) [UP]
+    Agent 1: (16,14) -> (15,14) [UP]
+    Agent 2: (7,14) -> (8,14) [DOWN]
+    Agent 3: (3,5) -> (2,5) [UP]
+t=2:
+    Agent 0: (8,10) -> (7,10) [UP]
+    Agent 1: (15,14) -> (14,14) [UP]
+    Agent 2: (8,14) -> (9,14) [DOWN]
+    Agent 3: (2,5) -> (1,5) [UP]
+t=3:
+    Agent 0: (7,10) -> (6,10) [UP]
+    Agent 1: (14,14) -> (13,14) [UP]
+    Agent 2: (9,14) -> (9,13) [LEFT]
+    Agent 3: (1,5) -> (1,4) [LEFT]
+t=4:
+    Agent 0: (6,10) -> (5,10) [UP]
+    Agent 1: (13,14) -> (13,13) [LEFT]
+    Agent 2: (9,13) -> (10,13) [DOWN]
+    Agent 3: (1,4) -> (1,3) [LEFT]
+t=5:
+    Agent 0: (5,10) -> (4,10) [UP]
+    Agent 1: (13,13) -> (13,12) [LEFT]
+    Agent 2: (10,13) -> (11,13) [DOWN]
+    Agent 3: (1,3) -> (1,2) [LEFT]
+t=6:
+    Agent 0: (4,10) -> (3,10) [UP]
+    Agent 1: (13,12) -> (13,11) [LEFT]
+    Agent 2: (11,13) -> (11,12) [LEFT]
+    Agent 3: (1,2) -> (1,1) [LEFT]
+t=7:
+    Agent 0: (3,10) -> (2,10) [UP]
+    Agent 1: (13,11) -> (13,10) [LEFT]
+    Agent 2: (11,12) -> (12,12) [DOWN]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=8:
+    Agent 0: (2,10) -> (1,10) [UP]
+    Agent 1: (13,10) -> (13,9) [LEFT]
+    Agent 2: (12,12) -> (13,12) [DOWN]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=9:
+    Agent 0: (1,10) -> (1,9) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,12) -> (13,11) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=10:
+    Agent 0: (1,9) -> (1,8) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,11) -> (13,10) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=11:
+    Agent 0: (1,8) -> (1,7) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,9) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=12:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,9) -> (13,8) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=13:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,8) -> (13,7) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=14:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,7) -> (13,6) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=15:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,6) -> (13,5) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=16:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,5) -> (13,4) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=17:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,4) -> (13,3) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=18:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,3) -> (13,2) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=19:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,2) -> (13,2) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+-------------------------
+
+  [PBS] Agent 2 t=11: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=12: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=13: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=14: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=15: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=16: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=17: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=18: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=19: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=20: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=21: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=22: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=23: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=24: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=25: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=26: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=27: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=28: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=29: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=30: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=31: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=32: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=33: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=34: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=35: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=36: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=37: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=38: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=39: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=40: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=41: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=42: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=43: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=44: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=45: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=46: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=47: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=48: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=49: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=50: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=51: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=52: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=53: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=54: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=55: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=56: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=57: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=58: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=59: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=60: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=61: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=62: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=63: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=64: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=65: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=66: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=67: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=68: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=69: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=70: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=71: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=72: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=73: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=74: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=75: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=76: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=77: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=78: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=79: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=80: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=81: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=82: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=83: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=84: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=85: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=86: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=87: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=88: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=89: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=90: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=91: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=92: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=93: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=94: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=95: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=96: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=97: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=98: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+  [PBS] Agent 2 t=99: forced WAIT at (13,10) due to VERTEX constraint (wanted (13,9))
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (10,10) -> (9,10) [UP]
+    Agent 1: (17,14) -> (16,14) [UP]
+    Agent 2: (7,15) -> (7,14) [LEFT]
+    Agent 3: (4,5) -> (3,5) [UP]
+t=1:
+    Agent 0: (9,10) -> (8,10) [UP]
+    Agent 1: (16,14) -> (15,14) [UP]
+    Agent 2: (7,14) -> (8,14) [DOWN]
+    Agent 3: (3,5) -> (2,5) [UP]
+t=2:
+    Agent 0: (8,10) -> (7,10) [UP]
+    Agent 1: (15,14) -> (14,14) [UP]
+    Agent 2: (8,14) -> (9,14) [DOWN]
+    Agent 3: (2,5) -> (1,5) [UP]
+t=3:
+    Agent 0: (7,10) -> (6,10) [UP]
+    Agent 1: (14,14) -> (13,14) [UP]
+    Agent 2: (9,14) -> (9,13) [LEFT]
+    Agent 3: (1,5) -> (1,4) [LEFT]
+t=4:
+    Agent 0: (6,10) -> (5,10) [UP]
+    Agent 1: (13,14) -> (13,13) [LEFT]
+    Agent 2: (9,13) -> (10,13) [DOWN]
+    Agent 3: (1,4) -> (1,3) [LEFT]
+t=5:
+    Agent 0: (5,10) -> (4,10) [UP]
+    Agent 1: (13,13) -> (13,12) [LEFT]
+    Agent 2: (10,13) -> (11,13) [DOWN]
+    Agent 3: (1,3) -> (1,2) [LEFT]
+t=6:
+    Agent 0: (4,10) -> (3,10) [UP]
+    Agent 1: (13,12) -> (13,11) [LEFT]
+    Agent 2: (11,13) -> (11,12) [LEFT]
+    Agent 3: (1,2) -> (1,1) [LEFT]
+t=7:
+    Agent 0: (3,10) -> (2,10) [UP]
+    Agent 1: (13,11) -> (13,10) [LEFT]
+    Agent 2: (11,12) -> (12,12) [DOWN]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=8:
+    Agent 0: (2,10) -> (1,10) [UP]
+    Agent 1: (13,10) -> (13,9) [LEFT]
+    Agent 2: (12,12) -> (13,12) [DOWN]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=9:
+    Agent 0: (1,10) -> (1,9) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,12) -> (13,11) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=10:
+    Agent 0: (1,9) -> (1,8) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,11) -> (13,10) [LEFT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=11:
+    Agent 0: (1,8) -> (1,7) [LEFT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=12:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=13:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=14:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=15:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=16:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=17:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=18:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+t=19:
+    Agent 0: (1,7) -> (1,7) [WAIT]
+    Agent 1: (13,9) -> (13,9) [WAIT]
+    Agent 2: (13,10) -> (13,10) [WAIT]
+    Agent 3: (1,1) -> (1,1) [WAIT]
+-------------------------
+
+Solution found! Cost: 420
+
+============================================================
+PBS SEARCH TREE
+============================================================
+└── Node 0 | Collision: 2-1 at (13, 9) t=12 | Cost: 420 | Priorities: {}
+    ├── Node 1 [Added: 2>1] | Cost: 420 | Priorities: {2>1}
+    └── Node 2 [Added: 1>2] ✓ SOLUTION | Cost: 420 | Priorities: {1>2}
+
+------------------------------------------------------------
+Total nodes generated: 3
+Total nodes expanded:  2
+Solution found at Node 2
+Final priorities: {1>2}
+============================================================
+
+
+--------------------------------------------------
+Run 64: SOLVED in 0.27s
+Nodes Generated: 3
+Nodes Expanded:  2
+
+Final path lengths:
+  Agent 0: 12 steps
+  Agent 1: 9 steps
+  Agent 2: 104 steps
+  Agent 3: 7 steps
+--------------------------------------------------

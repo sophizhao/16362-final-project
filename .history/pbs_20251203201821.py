@@ -5,8 +5,6 @@ Aligns with Jiaoyang-Li/PBS architecture using DQN agents as low-level planners.
 """
 
 import argparse
-import contextlib
-import io
 import os
 import numpy as np
 from stable_baselines3 import DQN
@@ -406,7 +404,6 @@ class PBSPlanner:
         self.root_node = None
         self.all_nodes = []
         self.solution_node = None
-        self.last_solve_timed_out = False
 
     def add_agent(self, agent_id, model_path, start_pos, goal_pos, color):
         model = DQN.load(model_path)
@@ -593,13 +590,8 @@ class PBSPlanner:
       
       return None
 
-    def solve(self, time_limit=None):
+    def solve(self):
         print(f"Starting PBS for {len(self.agents)} agents...")
-        self.last_solve_timed_out = False
-        start_time = time.perf_counter()
-
-        def timed_out():
-            return time_limit is not None and (time.perf_counter() - start_time) >= time_limit
         
         # Reset tree tracking
         self.all_nodes = []
@@ -613,10 +605,6 @@ class PBSPlanner:
         # Initially, plan all agents (empty priorities -> order doesn't matter yet, 
         # but topological sort will give default order)
         success = self.update_plan(root, set(self.agent_ids))
-        if timed_out():
-            print("PBS solve timed out during root planning.")
-            self.last_solve_timed_out = True
-            return None
         if not success: return None
         
         # 2. Check root conflicts
@@ -635,10 +623,6 @@ class PBSPlanner:
         self.generated_nodes = 1
         
         while open_list:
-            if timed_out():
-                print("PBS solve timed out while exploring search tree.")
-                self.last_solve_timed_out = True
-                return None
             curr_node = open_list.pop() # DFS
             self.expanded_nodes += 1
             
@@ -666,10 +650,6 @@ class PBSPlanner:
             child1.added_priority = (a1, a2)
             
             # Only replan a2 (the lower priority one)
-            if timed_out():
-                print("PBS solve timed out during child expansion.")
-                self.last_solve_timed_out = True
-                return None
             if self.update_plan(child1, {a2}):
                 curr_node.children.append(child1)
                 self.all_nodes.append(child1)
@@ -687,10 +667,6 @@ class PBSPlanner:
             child2.added_priority = (a2, a1)
             
             # Only replan a1
-            if timed_out():
-                print("PBS solve timed out during child expansion.")
-                self.last_solve_timed_out = True
-                return None
             if self.update_plan(child2, {a1}):
                 curr_node.children.append(child2)
                 self.all_nodes.append(child2)
@@ -812,8 +788,6 @@ class PBSPlanner:
         if not solution:
             print("No solution to visualize.")
             return
-        if not animate and not save_gif and not save_path:
-            return
 
         # Switch to Agg backend when saving GIFs to avoid display issues
         original_backend = None
@@ -884,6 +858,8 @@ class PBSPlanner:
             if animate and not save_gif:
                 plt.draw()
                 plt.pause(delay)
+            elif timestep == 0 and not save_gif:
+                plt.show()
         
         # Save GIF
         if save_gif and frames:
@@ -923,12 +899,9 @@ def main():
     parser.add_argument('--rrt_step_size', type=int, default=1, help='RRT step size (when --use_rrt)')
     parser.add_argument('--rrt_goal_bias', type=float, default=0.1, help='RRT goal bias probability (when --use_rrt)')
     parser.add_argument('--rrt_max_retries', type=int, default=40, help='RRT resampling attempts for collision-free discrete path')
-    parser.add_argument('--num_runs', type=int, default=100, help='Number of randomized scenarios to solve')
+    parser.add_argument('--num_runs', type=int, default=5, help='Number of randomized scenarios to solve')
     parser.add_argument('--seed', type=int, default=None, help='Random seed for reproducibility')
-    parser.add_argument('--obstacle_density', type=float, default=0.1, help='Density of obstacles in randomized grids (0-1)')
-    parser.add_argument('--metrics_plot', type=str, default='pbs_metrics.png', help='Path to save aggregate metrics plot (set empty to skip)')
-    parser.add_argument('--log_dir', type=str, default='run_logs', help='Directory to store per-run console logs (set empty to skip)')
-    parser.add_argument('--game_timeout', type=float, default=10.0, help='Max seconds to spend per run before aborting (0 disables timeout)')
+    parser.add_argument('--obstacle_density', type=float, default=0.15, help='Density of obstacles in randomized grids (0-1)')
     args = parser.parse_args()
 
     if not args.use_rrt and not args.model:
@@ -940,11 +913,6 @@ def main():
     num_agents = 4
     rng = np.random.default_rng(args.seed)
     success_runs = 0
-    run_metrics = []
-    log_dir = args.log_dir if args.log_dir else None
-    if log_dir:
-        os.makedirs(log_dir, exist_ok=True)
-        print(f"Saving run logs to: {log_dir}")
     
     print("=" * 50)
     print("PBS RANDOM SCENARIOS")
@@ -953,174 +921,64 @@ def main():
           f"(obstacle_density={args.obstacle_density:.2f})\n")
 
     for run_idx in range(1, args.num_runs + 1):
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            print(f"\n--- Random Run {run_idx}/{args.num_runs} ---")
-            grid = generate_random_grid(rng, map_size, args.obstacle_density, min_free_cells=num_agents * 4)
-            obstacle_coords = [tuple(map(int, coord)) for coord in np.argwhere(grid == 1)]
-            obstacle_count = len(obstacle_coords)
-            agent_configs = sample_agent_configs(rng, grid, num_agents)
+        print(f"\n--- Random Run {run_idx}/{args.num_runs} ---")
+        grid = generate_random_grid(rng, map_size, args.obstacle_density, min_free_cells=num_agents * 4)
+        obstacle_coords = [tuple(map(int, coord)) for coord in np.argwhere(grid == 1)]
+        obstacle_count = len(obstacle_coords)
+        agent_configs = sample_agent_configs(rng, grid, num_agents)
 
-            planner = PBSPlanner(map_size=map_size, obstacles=obstacle_coords, max_steps=args.max_steps)
+        planner = PBSPlanner(map_size=map_size, obstacles=obstacle_coords, max_steps=args.max_steps)
 
-            print(f"Obstacle cells: {obstacle_count} / {map_size[0] * map_size[1]}")
-            print("Agent Setup:")
-            for cfg in agent_configs:
-                if args.use_rrt:
-                    planner.add_rrt_agent(
-                        cfg["id"],
-                        cfg["start"],
-                        cfg["goal"],
-                        cfg["color"],
-                        rrt_max_iters=args.rrt_max_iters,
-                        rrt_step_size=args.rrt_step_size,
-                        rrt_goal_bias=args.rrt_goal_bias,
-                        rrt_max_retries=args.rrt_max_retries,
-                    )
-                else:
-                    planner.add_agent(cfg["id"], args.model, cfg["start"], cfg["goal"], cfg["color"])
-                print(f"  Agent {cfg['id']}: {cfg['start']} -> {cfg['goal']} ({cfg['color']})")
-
-            time_limit = args.game_timeout if args.game_timeout and args.game_timeout > 0 else None
-            start_time = time.time()
-            solution = planner.solve(time_limit=time_limit)
-            duration = time.time() - start_time
-            timeout_triggered = planner.last_solve_timed_out
-
-            print("\n" + "-" * 50)
-            run_record = {
-                "run": run_idx,
-                "success_ratio": 0.0,
-                "max_steps": None,
-                "avg_steps": None,
-                "nodes_generated": planner.generated_nodes,
-                "nodes_expanded": planner.expanded_nodes,
-                "pbs_branches": len(planner.all_nodes) > 1,
-                "timed_out": False,
-            }
-
-            if solution and not timeout_triggered:
-                success_runs += 1
-                print(f"Run {run_idx}: SOLVED in {duration:.2f}s")
-                print(f"Nodes Generated: {planner.generated_nodes}")
-                print(f"Nodes Expanded:  {planner.expanded_nodes}")
-
-                print("\nFinal path lengths:")
-                completion_times = []
-                success_count = 0
-                for agent_id, path in solution.items():
-                    completion = planner._completion_time(agent_id, path)
-                    agent_goal = tuple(planner.agents[agent_id].goal)
-                    reached = any((y, x) == agent_goal for (y, x, _) in path)
-                    if reached:
-                        success_count += 1
-                    completion_times.append(completion)
-                    print(f"  Agent {agent_id}: {completion} steps")
-
-                success_ratio = success_count / num_agents
-                max_steps_taken = max(completion_times) if completion_times else None
-                avg_steps_taken = float(np.mean(completion_times)) if completion_times else None
-                run_record["success_ratio"] = success_ratio
-                run_record["max_steps"] = max_steps_taken
-                run_record["avg_steps"] = avg_steps_taken
-
-                gif_path = format_save_path(args.save_gif, run_idx)
-                img_path = format_save_path(args.save_img, run_idx)
-                planner.visualize_solution(
-                    solution,
-                    animate=not args.no_anim,
-                    delay=0.3,
-                    save_gif=gif_path,
-                    save_path=img_path
+        print(f"Obstacle cells: {obstacle_count} / {map_size[0] * map_size[1]}")
+        print("Agent Setup:")
+        for cfg in agent_configs:
+            if args.use_rrt:
+                planner.add_rrt_agent(
+                    cfg["id"],
+                    cfg["start"],
+                    cfg["goal"],
+                    cfg["color"],
+                    rrt_max_iters=args.rrt_max_iters,
+                    rrt_step_size=args.rrt_step_size,
+                    rrt_goal_bias=args.rrt_goal_bias,
+                    rrt_max_retries=args.rrt_max_retries,
                 )
             else:
-                if timeout_triggered:
-                    run_record["timed_out"] = True
-                    print(f"Run {run_idx}: TIMED OUT after {args.game_timeout}s.")
-                else:
-                    print(f"Run {run_idx}: NO SOLUTION FOUND")
-            print("-" * 50)
+                planner.add_agent(cfg["id"], args.model, cfg["start"], cfg["goal"], cfg["color"])
+            print(f"  Agent {cfg['id']}: {cfg['start']} -> {cfg['goal']} ({cfg['color']})")
 
-        run_output = buffer.getvalue()
-        print(run_output, end="")
-        if log_dir:
-            log_path = os.path.join(log_dir, f"run_{run_idx:03d}.log")
-            with open(log_path, "w") as f:
-                f.write(run_output)
+        start_time = time.time()
+        solution = planner.solve()
+        duration = time.time() - start_time
 
-        run_metrics.append(run_record)
+        print("\n" + "-" * 50)
+        if solution:
+            success_runs += 1
+            print(f"Run {run_idx}: SOLVED in {duration:.2f}s")
+            print(f"Nodes Generated: {planner.generated_nodes}")
+            print(f"Nodes Expanded:  {planner.expanded_nodes}")
+
+            print("\nFinal path lengths:")
+            for agent_id, path in solution.items():
+                completion = planner._completion_time(agent_id, path)
+                print(f"  Agent {agent_id}: {completion} steps")
+
+            gif_path = format_save_path(args.save_gif, run_idx)
+            img_path = format_save_path(args.save_img, run_idx)
+            planner.visualize_solution(
+                solution,
+                animate=not args.no_anim,
+                delay=0.3,
+                save_gif=gif_path,
+                save_path=img_path
+            )
+        else:
+            print(f"Run {run_idx}: NO SOLUTION FOUND")
+        print("-" * 50)
 
     print("\n" + "=" * 50)
     print(f"Completed {args.num_runs} runs | Successes: {success_runs} | Failures: {args.num_runs - success_runs}")
     print("=" * 50)
-    
-    if run_metrics:
-        success_ratios = np.array([m["success_ratio"] for m in run_metrics], dtype=float)
-        max_steps_arr = np.array([np.nan if m["max_steps"] is None else m["max_steps"] for m in run_metrics], dtype=float)
-        avg_steps_arr = np.array([np.nan if m["avg_steps"] is None else m["avg_steps"] for m in run_metrics], dtype=float)
-        nodes_gen_arr = np.array([m["nodes_generated"] for m in run_metrics], dtype=float)
-        nodes_exp_arr = np.array([m["nodes_expanded"] for m in run_metrics], dtype=float)
-        pbs_branch_arr = np.array([1 if m["pbs_branches"] else 0 for m in run_metrics], dtype=int)
-        timeout_arr = np.array([1 if m.get("timed_out") else 0 for m in run_metrics], dtype=int)
-
-        avg_success_pct = np.mean(success_ratios) * 100.0
-        avg_max_steps = np.nanmean(max_steps_arr) if not np.all(np.isnan(max_steps_arr)) else float("nan")
-        avg_avg_steps = np.nanmean(avg_steps_arr) if not np.all(np.isnan(avg_steps_arr)) else float("nan")
-        avg_nodes_generated = np.mean(nodes_gen_arr)
-        avg_nodes_expanded = np.mean(nodes_exp_arr)
-        pbs_branch_runs = int(np.sum(pbs_branch_arr))
-
-        print("\nAggregate Metrics:")
-        print(f"  Avg agent success: {avg_success_pct:.2f}%")
-        print(f"  Avg max steps per run: {avg_max_steps:.2f}")
-        print(f"  Avg mean steps per run: {avg_avg_steps:.2f}")
-        print(f"  Avg nodes generated: {avg_nodes_generated:.2f}")
-        print(f"  Avg nodes expanded: {avg_nodes_expanded:.2f}")
-        print(f"  Runs with PBS branching: {pbs_branch_runs}/{len(run_metrics)}")
-        print(f"  Runs timed out: {int(np.sum(timeout_arr))}/{len(run_metrics)}")
-
-        metrics_plot_path = args.metrics_plot if args.metrics_plot else None
-        if metrics_plot_path:
-            runs = [m["run"] for m in run_metrics]
-            fig, axes = plt.subplots(3, 2, figsize=(14, 12))
-            
-            axes[0, 0].plot(runs, success_ratios * 100.0, marker='o')
-            axes[0, 0].set_title("Agent Success Percentage")
-            axes[0, 0].set_xlabel("Run")
-            axes[0, 0].set_ylabel("% Success")
-            axes[0, 0].set_ylim(0, 100)
-            
-            axes[0, 1].plot(runs, max_steps_arr, marker='o', color='orange')
-            axes[0, 1].set_title("Max Steps per Run")
-            axes[0, 1].set_xlabel("Run")
-            axes[0, 1].set_ylabel("Steps")
-            
-            axes[1, 0].plot(runs, avg_steps_arr, marker='o', color='green')
-            axes[1, 0].set_title("Average Steps per Run")
-            axes[1, 0].set_xlabel("Run")
-            axes[1, 0].set_ylabel("Steps")
-            
-            axes[1, 1].plot(runs, nodes_gen_arr, marker='o', color='purple')
-            axes[1, 1].set_title("Nodes Generated")
-            axes[1, 1].set_xlabel("Run")
-            axes[1, 1].set_ylabel("Count")
-            
-            axes[2, 0].plot(runs, nodes_exp_arr, marker='o', color='red')
-            axes[2, 0].set_title("Nodes Expanded")
-            axes[2, 0].set_xlabel("Run")
-            axes[2, 0].set_ylabel("Count")
-            
-            axes[2, 1].bar(runs, pbs_branch_arr, color='teal', alpha=0.7, label='PBS Branch')
-            axes[2, 1].bar(runs, timeout_arr, color='red', alpha=0.4, label='Timed Out')
-            axes[2, 1].set_title("PBS Branching / Timeouts")
-            axes[2, 1].set_xlabel("Run")
-            axes[2, 1].set_ylabel("Indicator")
-            axes[2, 1].legend()
-            
-            plt.tight_layout()
-            fig.savefig(metrics_plot_path, dpi=150)
-            plt.close(fig)
-            print(f"Metrics plot saved to: {metrics_plot_path}")
 
 if __name__ == "__main__":
     main()

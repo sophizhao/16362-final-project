@@ -1,0 +1,138 @@
+
+--- Random Run 2/70 ---
+Obstacle cells: 43 / 400
+Agent Setup:
+  Agent 0: (4, 2) -> (19, 15) (red)
+  Agent 1: (2, 2) -> (15, 12) (blue)
+  Agent 2: (8, 9) -> (0, 13) (green)
+  Agent 3: (17, 6) -> (12, 1) (orange)
+Starting PBS for 4 agents...
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (4,2) -> (5,2) [DOWN]
+    Agent 1: (2,2) -> (3,2) [DOWN]
+    Agent 2: (8,9) -> (7,9) [UP]
+    Agent 3: (17,6) -> (16,6) [UP]
+t=1:
+    Agent 0: (5,2) -> (6,2) [DOWN]
+    Agent 1: (3,2) -> (4,2) [DOWN]
+    Agent 2: (7,9) -> (6,9) [UP]
+    Agent 3: (16,6) -> (15,6) [UP]
+t=2:
+    Agent 0: (6,2) -> (7,2) [DOWN]
+    Agent 1: (4,2) -> (5,2) [DOWN]
+    Agent 2: (6,9) -> (5,9) [UP]
+    Agent 3: (15,6) -> (14,6) [UP]
+t=3:
+    Agent 0: (7,2) -> (8,2) [DOWN]
+    Agent 1: (5,2) -> (6,2) [DOWN]
+    Agent 2: (5,9) -> (4,9) [UP]
+    Agent 3: (14,6) -> (14,5) [LEFT]
+t=4:
+    Agent 0: (8,2) -> (9,2) [DOWN]
+    Agent 1: (6,2) -> (7,2) [DOWN]
+    Agent 2: (4,9) -> (3,9) [UP]
+    Agent 3: (14,5) -> (14,4) [LEFT]
+t=5:
+    Agent 0: (9,2) -> (9,3) [RIGHT]
+    Agent 1: (7,2) -> (8,2) [DOWN]
+    Agent 2: (3,9) -> (2,9) [UP]
+    Agent 3: (14,4) -> (14,3) [LEFT]
+t=6:
+    Agent 0: (9,3) -> (9,4) [RIGHT]
+    Agent 1: (8,2) -> (9,2) [DOWN]
+    Agent 2: (2,9) -> (2,10) [RIGHT]
+    Agent 3: (14,3) -> (13,3) [UP]
+t=7:
+    Agent 0: (9,4) -> (10,4) [DOWN]
+    Agent 1: (9,2) -> (9,3) [RIGHT]
+    Agent 2: (2,10) -> (1,10) [UP]
+    Agent 3: (13,3) -> (12,3) [UP]
+t=8:
+    Agent 0: (10,4) -> (11,4) [DOWN]
+    Agent 1: (9,3) -> (9,4) [RIGHT]
+    Agent 2: (1,10) -> (0,10) [UP]
+    Agent 3: (12,3) -> (12,2) [LEFT]
+t=9:
+    Agent 0: (11,4) -> (12,4) [DOWN]
+    Agent 1: (9,4) -> (9,5) [RIGHT]
+    Agent 2: (0,10) -> (0,11) [RIGHT]
+    Agent 3: (12,2) -> (12,1) [LEFT]
+t=10:
+    Agent 0: (12,4) -> (13,4) [DOWN]
+    Agent 1: (9,5) -> (10,5) [DOWN]
+    Agent 2: (0,11) -> (0,12) [RIGHT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=11:
+    Agent 0: (13,4) -> (14,4) [DOWN]
+    Agent 1: (10,5) -> (11,5) [DOWN]
+    Agent 2: (0,12) -> (0,13) [RIGHT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=12:
+    Agent 0: (14,4) -> (15,4) [DOWN]
+    Agent 1: (11,5) -> (11,6) [RIGHT]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=13:
+    Agent 0: (15,4) -> (16,4) [DOWN]
+    Agent 1: (11,6) -> (11,7) [RIGHT]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=14:
+    Agent 0: (16,4) -> (16,5) [RIGHT]
+    Agent 1: (11,7) -> (11,8) [RIGHT]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=15:
+    Agent 0: (16,5) -> (16,6) [RIGHT]
+    Agent 1: (11,8) -> (12,8) [DOWN]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=16:
+    Agent 0: (16,6) -> (16,7) [RIGHT]
+    Agent 1: (12,8) -> (13,8) [DOWN]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=17:
+    Agent 0: (16,7) -> (17,7) [DOWN]
+    Agent 1: (13,8) -> (14,8) [DOWN]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=18:
+    Agent 0: (17,7) -> (18,7) [DOWN]
+    Agent 1: (14,8) -> (14,9) [RIGHT]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+t=19:
+    Agent 0: (18,7) -> (19,7) [DOWN]
+    Agent 1: (14,9) -> (15,9) [DOWN]
+    Agent 2: (0,13) -> (0,13) [WAIT]
+    Agent 3: (12,1) -> (12,1) [WAIT]
+-------------------------
+
+
+============================================================
+PBS SEARCH TREE
+============================================================
+└── Node 0 ✓ SOLUTION | Cost: 420 | Priorities: {}
+
+------------------------------------------------------------
+Total nodes generated: 0
+Total nodes expanded:  0
+Solution found at Node 0
+Final priorities: {}
+============================================================
+
+
+--------------------------------------------------
+Run 2: SOLVED in 0.08s
+Nodes Generated: 0
+Nodes Expanded:  0
+
+Final path lengths:
+  Agent 0: 28 steps
+  Agent 1: 23 steps
+  Agent 2: 12 steps
+  Agent 3: 10 steps
+--------------------------------------------------

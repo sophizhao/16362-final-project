@@ -1,0 +1,354 @@
+
+--- Random Run 51/70 ---
+Obstacle cells: 38 / 400
+Agent Setup:
+  Agent 0: (0, 9) -> (4, 2) (red)
+  Agent 1: (15, 5) -> (17, 11) (blue)
+  Agent 2: (4, 8) -> (17, 15) (green)
+  Agent 3: (16, 15) -> (17, 1) (orange)
+Starting PBS for 4 agents...
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (0,9) -> (0,8) [LEFT]
+    Agent 1: (15,5) -> (16,5) [DOWN]
+    Agent 2: (4,8) -> (5,8) [DOWN]
+    Agent 3: (16,15) -> (17,15) [DOWN]
+t=1:
+    Agent 0: (0,8) -> (0,7) [LEFT]
+    Agent 1: (16,5) -> (17,5) [DOWN]
+    Agent 2: (5,8) -> (6,8) [DOWN]
+    Agent 3: (17,15) -> (17,14) [LEFT]
+t=2:
+    Agent 0: (0,7) -> (0,6) [LEFT]
+    Agent 1: (17,5) -> (17,6) [RIGHT]
+    Agent 2: (6,8) -> (7,8) [DOWN]
+    Agent 3: (17,14) -> (17,13) [LEFT]
+t=3:
+    Agent 0: (0,6) -> (0,5) [LEFT]
+    Agent 1: (17,6) -> (17,7) [RIGHT]
+    Agent 2: (7,8) -> (8,8) [DOWN]
+    Agent 3: (17,13) -> (17,12) [LEFT]
+t=4:
+    Agent 0: (0,5) -> (0,4) [LEFT]
+    Agent 1: (17,7) -> (17,8) [RIGHT]
+    Agent 2: (8,8) -> (9,8) [DOWN]
+    Agent 3: (17,12) -> (17,11) [LEFT]
+t=5:
+    Agent 0: (0,4) -> (0,3) [LEFT]
+    Agent 1: (17,8) -> (17,9) [RIGHT]
+    Agent 2: (9,8) -> (10,8) [DOWN]
+    Agent 3: (17,11) -> (17,10) [LEFT]
+t=6:
+    Agent 0: (0,3) -> (1,3) [DOWN]
+    Agent 1: (17,9) -> (17,10) [RIGHT]
+    Agent 2: (10,8) -> (11,8) [DOWN]
+    Agent 3: (17,10) -> (17,9) [LEFT]
+t=7:
+    Agent 0: (1,3) -> (2,3) [DOWN]
+    Agent 1: (17,10) -> (17,11) [RIGHT]
+    Agent 2: (11,8) -> (12,8) [DOWN]
+    Agent 3: (17,9) -> (17,8) [LEFT]
+t=8:
+    Agent 0: (2,3) -> (3,3) [DOWN]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (12,8) -> (13,8) [DOWN]
+    Agent 3: (17,8) -> (17,7) [LEFT]
+t=9:
+    Agent 0: (3,3) -> (4,3) [DOWN]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (13,8) -> (14,8) [DOWN]
+    Agent 3: (17,7) -> (17,6) [LEFT]
+t=10:
+    Agent 0: (4,3) -> (4,2) [LEFT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (14,8) -> (15,8) [DOWN]
+    Agent 3: (17,6) -> (17,5) [LEFT]
+t=11:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,8) -> (15,9) [RIGHT]
+    Agent 3: (17,5) -> (17,4) [LEFT]
+t=12:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,9) -> (15,10) [RIGHT]
+    Agent 3: (17,4) -> (17,3) [LEFT]
+t=13:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,10) -> (15,11) [RIGHT]
+    Agent 3: (17,3) -> (17,2) [LEFT]
+t=14:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,11) -> (15,12) [RIGHT]
+    Agent 3: (17,2) -> (17,1) [LEFT]
+t=15:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,12) -> (15,13) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=16:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,13) -> (16,13) [DOWN]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=17:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (16,13) -> (16,14) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=18:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (16,14) -> (17,14) [DOWN]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=19:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (17,14) -> (17,15) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+-------------------------
+
+  -> Edge collision detected: Agent 1 and 3 swapping (17, 9)<->(17, 9) at t=6
+  -> Edge collision detected: Agent 1 and 3 swapping (17, 9)<->(17, 9) at t=6
+Node 0: Collision 1-3 at (17, 9) t=6
+  [PBS] Agent 3 t=6: rerouted to (16,10) [UP] (wanted (17,9))
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (0,9) -> (0,8) [LEFT]
+    Agent 1: (15,5) -> (16,5) [DOWN]
+    Agent 2: (4,8) -> (5,8) [DOWN]
+    Agent 3: (16,15) -> (17,15) [DOWN]
+t=1:
+    Agent 0: (0,8) -> (0,7) [LEFT]
+    Agent 1: (16,5) -> (17,5) [DOWN]
+    Agent 2: (5,8) -> (6,8) [DOWN]
+    Agent 3: (17,15) -> (17,14) [LEFT]
+t=2:
+    Agent 0: (0,7) -> (0,6) [LEFT]
+    Agent 1: (17,5) -> (17,6) [RIGHT]
+    Agent 2: (6,8) -> (7,8) [DOWN]
+    Agent 3: (17,14) -> (17,13) [LEFT]
+t=3:
+    Agent 0: (0,6) -> (0,5) [LEFT]
+    Agent 1: (17,6) -> (17,7) [RIGHT]
+    Agent 2: (7,8) -> (8,8) [DOWN]
+    Agent 3: (17,13) -> (17,12) [LEFT]
+t=4:
+    Agent 0: (0,5) -> (0,4) [LEFT]
+    Agent 1: (17,7) -> (17,8) [RIGHT]
+    Agent 2: (8,8) -> (9,8) [DOWN]
+    Agent 3: (17,12) -> (17,11) [LEFT]
+t=5:
+    Agent 0: (0,4) -> (0,3) [LEFT]
+    Agent 1: (17,8) -> (17,9) [RIGHT]
+    Agent 2: (9,8) -> (10,8) [DOWN]
+    Agent 3: (17,11) -> (17,10) [LEFT]
+t=6:
+    Agent 0: (0,3) -> (1,3) [DOWN]
+    Agent 1: (17,9) -> (17,10) [RIGHT]
+    Agent 2: (10,8) -> (11,8) [DOWN]
+    Agent 3: (17,10) -> (16,10) [UP]
+t=7:
+    Agent 0: (1,3) -> (2,3) [DOWN]
+    Agent 1: (17,10) -> (17,11) [RIGHT]
+    Agent 2: (11,8) -> (12,8) [DOWN]
+    Agent 3: (16,10) -> (17,10) [DOWN]
+t=8:
+    Agent 0: (2,3) -> (3,3) [DOWN]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (12,8) -> (13,8) [DOWN]
+    Agent 3: (17,10) -> (17,9) [LEFT]
+t=9:
+    Agent 0: (3,3) -> (4,3) [DOWN]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (13,8) -> (14,8) [DOWN]
+    Agent 3: (17,9) -> (17,8) [LEFT]
+t=10:
+    Agent 0: (4,3) -> (4,2) [LEFT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (14,8) -> (15,8) [DOWN]
+    Agent 3: (17,8) -> (17,7) [LEFT]
+t=11:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,8) -> (15,9) [RIGHT]
+    Agent 3: (17,7) -> (17,6) [LEFT]
+t=12:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,9) -> (15,10) [RIGHT]
+    Agent 3: (17,6) -> (17,5) [LEFT]
+t=13:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,10) -> (15,11) [RIGHT]
+    Agent 3: (17,5) -> (17,4) [LEFT]
+t=14:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,11) -> (15,12) [RIGHT]
+    Agent 3: (17,4) -> (17,3) [LEFT]
+t=15:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,12) -> (15,13) [RIGHT]
+    Agent 3: (17,3) -> (17,2) [LEFT]
+t=16:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,13) -> (16,13) [DOWN]
+    Agent 3: (17,2) -> (17,1) [LEFT]
+t=17:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (16,13) -> (16,14) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=18:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (16,14) -> (17,14) [DOWN]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=19:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (17,14) -> (17,15) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+-------------------------
+
+  [PBS] Agent 1 t=6: rerouted to (16,9) [UP] (wanted (17,10))
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (0,9) -> (0,8) [LEFT]
+    Agent 1: (15,5) -> (16,5) [DOWN]
+    Agent 2: (4,8) -> (5,8) [DOWN]
+    Agent 3: (16,15) -> (17,15) [DOWN]
+t=1:
+    Agent 0: (0,8) -> (0,7) [LEFT]
+    Agent 1: (16,5) -> (17,5) [DOWN]
+    Agent 2: (5,8) -> (6,8) [DOWN]
+    Agent 3: (17,15) -> (17,14) [LEFT]
+t=2:
+    Agent 0: (0,7) -> (0,6) [LEFT]
+    Agent 1: (17,5) -> (17,6) [RIGHT]
+    Agent 2: (6,8) -> (7,8) [DOWN]
+    Agent 3: (17,14) -> (17,13) [LEFT]
+t=3:
+    Agent 0: (0,6) -> (0,5) [LEFT]
+    Agent 1: (17,6) -> (17,7) [RIGHT]
+    Agent 2: (7,8) -> (8,8) [DOWN]
+    Agent 3: (17,13) -> (17,12) [LEFT]
+t=4:
+    Agent 0: (0,5) -> (0,4) [LEFT]
+    Agent 1: (17,7) -> (17,8) [RIGHT]
+    Agent 2: (8,8) -> (9,8) [DOWN]
+    Agent 3: (17,12) -> (17,11) [LEFT]
+t=5:
+    Agent 0: (0,4) -> (0,3) [LEFT]
+    Agent 1: (17,8) -> (17,9) [RIGHT]
+    Agent 2: (9,8) -> (10,8) [DOWN]
+    Agent 3: (17,11) -> (17,10) [LEFT]
+t=6:
+    Agent 0: (0,3) -> (1,3) [DOWN]
+    Agent 1: (17,9) -> (16,9) [UP]
+    Agent 2: (10,8) -> (11,8) [DOWN]
+    Agent 3: (17,10) -> (17,9) [LEFT]
+t=7:
+    Agent 0: (1,3) -> (2,3) [DOWN]
+    Agent 1: (16,9) -> (16,10) [RIGHT]
+    Agent 2: (11,8) -> (12,8) [DOWN]
+    Agent 3: (17,9) -> (17,8) [LEFT]
+t=8:
+    Agent 0: (2,3) -> (3,3) [DOWN]
+    Agent 1: (16,10) -> (17,10) [DOWN]
+    Agent 2: (12,8) -> (13,8) [DOWN]
+    Agent 3: (17,8) -> (17,7) [LEFT]
+t=9:
+    Agent 0: (3,3) -> (4,3) [DOWN]
+    Agent 1: (17,10) -> (17,11) [RIGHT]
+    Agent 2: (13,8) -> (14,8) [DOWN]
+    Agent 3: (17,7) -> (17,6) [LEFT]
+t=10:
+    Agent 0: (4,3) -> (4,2) [LEFT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (14,8) -> (15,8) [DOWN]
+    Agent 3: (17,6) -> (17,5) [LEFT]
+t=11:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,8) -> (15,9) [RIGHT]
+    Agent 3: (17,5) -> (17,4) [LEFT]
+t=12:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,9) -> (15,10) [RIGHT]
+    Agent 3: (17,4) -> (17,3) [LEFT]
+t=13:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,10) -> (15,11) [RIGHT]
+    Agent 3: (17,3) -> (17,2) [LEFT]
+t=14:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,11) -> (15,12) [RIGHT]
+    Agent 3: (17,2) -> (17,1) [LEFT]
+t=15:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,12) -> (15,13) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=16:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (15,13) -> (16,13) [DOWN]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=17:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (16,13) -> (16,14) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=18:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (16,14) -> (17,14) [DOWN]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+t=19:
+    Agent 0: (4,2) -> (4,2) [WAIT]
+    Agent 1: (17,11) -> (17,11) [WAIT]
+    Agent 2: (17,14) -> (17,15) [RIGHT]
+    Agent 3: (17,1) -> (17,1) [WAIT]
+-------------------------
+
+Solution found! Cost: 420
+
+============================================================
+PBS SEARCH TREE
+============================================================
+└── Node 0 | Collision: 1-3 at (17, 9) t=6 | Cost: 420 | Priorities: {}
+    ├── Node 1 [Added: 1>3] | Cost: 420 | Priorities: {1>3}
+    └── Node 2 [Added: 3>1] ✓ SOLUTION | Cost: 420 | Priorities: {3>1}
+
+------------------------------------------------------------
+Total nodes generated: 3
+Total nodes expanded:  2
+Solution found at Node 2
+Final priorities: {3>1}
+============================================================
+
+
+--------------------------------------------------
+Run 51: SOLVED in 0.17s
+Nodes Generated: 3
+Nodes Expanded:  2
+
+Final path lengths:
+  Agent 0: 11 steps
+  Agent 1: 10 steps
+  Agent 2: 20 steps
+  Agent 3: 15 steps
+--------------------------------------------------

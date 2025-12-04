@@ -1,0 +1,138 @@
+
+--- Random Run 53/70 ---
+Obstacle cells: 38 / 400
+Agent Setup:
+  Agent 0: (8, 0) -> (11, 5) (red)
+  Agent 1: (6, 15) -> (19, 18) (blue)
+  Agent 2: (18, 4) -> (13, 4) (green)
+  Agent 3: (11, 13) -> (7, 17) (orange)
+Starting PBS for 4 agents...
+
+--- Paths by Timestep ---
+t=0:
+    Agent 0: (8,0) -> (9,0) [DOWN]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (18,4) -> (17,4) [UP]
+    Agent 3: (11,13) -> (10,13) [UP]
+t=1:
+    Agent 0: (9,0) -> (10,0) [DOWN]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (17,4) -> (16,4) [UP]
+    Agent 3: (10,13) -> (10,14) [RIGHT]
+t=2:
+    Agent 0: (10,0) -> (10,1) [RIGHT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (16,4) -> (15,4) [UP]
+    Agent 3: (10,14) -> (10,15) [RIGHT]
+t=3:
+    Agent 0: (10,1) -> (10,2) [RIGHT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (15,4) -> (15,3) [LEFT]
+    Agent 3: (10,15) -> (10,16) [RIGHT]
+t=4:
+    Agent 0: (10,2) -> (10,3) [RIGHT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (15,3) -> (14,3) [UP]
+    Agent 3: (10,16) -> (10,17) [RIGHT]
+t=5:
+    Agent 0: (10,3) -> (10,3) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (14,3) -> (13,3) [UP]
+    Agent 3: (10,17) -> (9,17) [UP]
+t=6:
+    Agent 0: (10,3) -> (10,4) [RIGHT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,3) -> (13,4) [RIGHT]
+    Agent 3: (9,17) -> (8,17) [UP]
+t=7:
+    Agent 0: (10,4) -> (11,4) [DOWN]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (8,17) -> (7,17) [UP]
+t=8:
+    Agent 0: (11,4) -> (11,5) [RIGHT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=9:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=10:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=11:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=12:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=13:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=14:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=15:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=16:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=17:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=18:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,15) -> (6,16) [RIGHT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+t=19:
+    Agent 0: (11,5) -> (11,5) [WAIT]
+    Agent 1: (6,16) -> (6,15) [LEFT]
+    Agent 2: (13,4) -> (13,4) [WAIT]
+    Agent 3: (7,17) -> (7,17) [WAIT]
+-------------------------
+
+
+============================================================
+PBS SEARCH TREE
+============================================================
+└── Node 0 ✓ SOLUTION | Cost: 420 | Priorities: {}
+
+------------------------------------------------------------
+Total nodes generated: 0
+Total nodes expanded:  0
+Solution found at Node 0
+Final priorities: {}
+============================================================
+
+
+--------------------------------------------------
+Run 53: SOLVED in 0.13s
+Nodes Generated: 0
+Nodes Expanded:  0
+
+Final path lengths:
+  Agent 0: 9 steps
+  Agent 1: 104 steps
+  Agent 2: 7 steps
+  Agent 3: 8 steps
+--------------------------------------------------
