@@ -11,8 +11,8 @@ Each agent has a start and a goal; the objective is to reach all goals while avo
 We implement:
 
 - **Priority-Based Search (PBS)** for multi-agent planning on a grid  
-- A **DQN policy** as a low-level single-agent controller  
-- A **classical RRT baseline** for comparison  
+- A **DQN** (deep RL) path planner as a low-level single-agent controller  
+- An **RRT baseline** for comparison  
 - 2D visualizations and log-based metrics for both approaches
 
 ---
@@ -83,14 +83,14 @@ pip install numpy matplotlib torch stable-baselines3 gym
 
 ## Running the Code
 
-**Run PBS with the trained DQN controller:** 
-python3 pbs.py --model final_model.zip --num_runs 1
+**Run PBS with the trained DQN model:** 
+`python3 pbs.py --model logs/final_model.zip --num_runs 1`
 
 **Run PBS with the RRT baseline:**
-python3 pbs.py --use_rrt --num_runs 1
+`python3 pbs.py --use_rrt --num_runs 1`
 
 **Analyze all logs in run_logs/ and generate aggregate plots:**
-python3 analyze_logs.py
+`python3 analyze_logs.py`
 
 ---
 
